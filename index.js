@@ -11,13 +11,10 @@ import {loginValidator} from "./validation/auth.js";
 import UserModel from "./model/user.js"
 import ShopSchema from "./model/shop.js"
 import ProductSchema from "./model/product.js"
-
-import TelegramBot from 'node-telegram-bot-api';
+import bot from "./bot.js";
 import axios from 'axios';
 
 
-const botToken = "6892150968:AAFwvoDUEsp2_xrMfNobKhR9EY1qqSWMxpA";
-const serverUrl = "https://bathroom-shop-api.onrender.com";
 
 dotenv.config();
 
@@ -253,88 +250,9 @@ app.post('/api/order', async (req, res) => {
     }
 });
 
-
-const bot = new TelegramBot(botToken, { polling: true });
-const authenticatedUsers = {};
-
-
-// Обробник команди "Старт"
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Вітаємо! Для початку роботи введіть /login для автентифікації.');
+bot.launch().then(() => {
+    console.log('Bot started');
 });
-
-// Обробник команди "Логін"
-bot.onText(/\/login/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Будь ласка, введіть свій логін (email):');
-    bot.onText(/^(.+)/, (loginMsg, match) => {
-        const login = match[1];
-        const userId = loginMsg.from.id;
-        authenticatedUsers[userId] = { login };
-        bot.sendMessage(chatId, 'Логін збережено. Тепер введіть свій пароль:');
-        bot.onText(/^(.+)/, async (passwordMsg, match) => {
-            const password = match[1];
-            authenticatedUsers[userId].password = password;
-            try {
-                // Надсилання логіну та паролю на сервер для автентифікації
-                const response = await axios.post(`${serverUrl}api/auth/login`, {
-                    email: authenticatedUsers[userId].login,
-                    password: authenticatedUsers[userId].password,
-                });
-                const { token, ...userData } = response.data;
-                authenticatedUsers[userId].token = token;
-                bot.sendMessage(chatId, `Автентифікація пройшла успішно. Ваші дані:\n${JSON.stringify(userData, null, 2)}`);
-            } catch (error) {
-                console.error('Authentication error:', error.response ? error.response.data : error.message);
-                bot.sendMessage(chatId, 'Помилка автентифікації. Будь ласка, спробуйте знову.');
-            }
-            // Видалення обробників для команд "/login" та "/password" після завершення автентифікації
-            delete authenticatedUsers[userId].login;
-            delete authenticatedUsers[userId].password;
-            bot.removeTextListener(loginMsg.message_id);
-            bot.removeTextListener(passwordMsg.message_id);
-        });
-    });
-});
-
-// Обробник команди "Товари"
-bot.onText(/Товари/, async (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-
-    try {
-        // Надсилання запиту на сервер для отримання списку товарів
-        const response = await axios.get(`${serverUrl}api/admin/product`, {
-            headers: { Authorization: authenticatedUsers[userId].token },
-        });
-        const products = response.data;
-        bot.sendMessage(chatId, `Ваші товари:\n${JSON.stringify(products, null, 2)}`);
-    } catch (error) {
-        console.error('Error fetching products:', error.response ? error.response.data : error.message);
-        bot.sendMessage(chatId, 'Помилка при отриманні товарів.');
-    }
-});
-
-// Обробник команди "Замовлення"
-bot.onText(/Замовлення/, async (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-
-    try {
-        // Надсилання запиту на сервер для отримання списку замовлень
-        const response = await axios.get(`${serverUrl}api/order`, {
-            headers: { Authorization: authenticatedUsers[userId].token },
-        });
-        const orders = response.data;
-        bot.sendMessage(chatId, `Ваші замовлення:\n${JSON.stringify(orders, null, 2)}`);
-    } catch (error) {
-        console.error('Error fetching orders:', error.response ? error.response.data : error.message);
-        bot.sendMessage(chatId, 'Помилка при отриманні замовлень.');
-    }
-});
-
-
 
 app.listen(PORT, (err) => {
     if (err) {
