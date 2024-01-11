@@ -16,8 +16,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import axios from 'axios';
 
 
-const botToken = '6892150968:AAFwvoDUEsp2_xrMfNobKhR9EY1qqSWMxpA';
-const serverUrl = 'http://localhost:2222/';
+const botToken = process.env.TOKENBOT;
+const serverUrl = process.env.URLSERVER;
 
 dotenv.config();
 
