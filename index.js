@@ -16,8 +16,8 @@ import TelegramBot from 'node-telegram-bot-api';
 import axios from 'axios';
 
 
-const botToken = process.env.TOKENBOT;
-const serverUrl = process.env.URLSERVER;
+const botToken = "6892150968:AAFwvoDUEsp2_xrMfNobKhR9EY1qqSWMxpA";
+const serverUrl = "https://bathroom-shop-api.onrender.com";
 
 dotenv.config();
 
