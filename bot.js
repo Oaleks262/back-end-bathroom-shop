@@ -1,5 +1,6 @@
-const { Telegraf } = require('telegraf');
-const mongoose = require('mongoose');
+import { Telegraf } from 'telegraf';
+import mongoose from 'mongoose';
+import Product from './model/product.js';
 
 const botToken = '6892150968:AAFwvoDUEsp2_xrMfNobKhR9EY1qqSWMxpA';
 const dbConnectionString = 'mongodb+srv://Admin:Black.Street818@bathroom-shop.29wete0.mongodb.net/market?retryWrites=true&w=majority';
@@ -8,13 +9,6 @@ const bot = new Telegraf(botToken);
 
 mongoose.connect(dbConnectionString, { useNewUrlParser: true, useUnifiedTopology: true });
 
-const Product = mongoose.model('Product', {
-    avatarUrl: String,
-    titleProduct: String,
-    aboutProduct: String,
-    priceProduct: Number,
-    // Додайте інші поля для продукту за потребою
-});
 
 bot.start((ctx) => {
   ctx.reply('Вітаю! Я бот для замовлень. Використовуйте кнопки для взаємодії.',
