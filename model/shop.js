@@ -30,6 +30,10 @@ const ShopSchema = new mongoose.Schema({
     productItem: {
         type: Array,
         required: true,
+    },
+    acrivePosition: {
+        type: String,
+        required: true,
     }
 
 })

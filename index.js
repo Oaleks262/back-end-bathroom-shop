@@ -125,6 +125,8 @@ const authenticateToken = (req, res, next) => {
         next();
     });
 };
+
+
 app.get('/api/product', async (req, res) => {
 try{
     const allProducts = await ProductSchema.find();
@@ -220,7 +222,9 @@ app.delete('/api/admin/product/:productId',authenticateToken, async (req, res) =
             res.status(500).json({ message: "Не вдалося видалити товар" });
         }
 });
-app.post('/api/order', async (req, res) => {
+
+
+app.post('/api/admin/order',authenticateToken, async (req, res) => {
     try {
         const { firstName, lastName, phoneNumber, city, postOffice, numberPost, productItem } = req.body;
 
@@ -238,6 +242,7 @@ app.post('/api/order', async (req, res) => {
             postOffice,
             numberPost,
             productItem,
+            acrivePosition,
         });
 
         // Збереження замовлення у базі даних
@@ -249,6 +254,91 @@ app.post('/api/order', async (req, res) => {
         res.status(500).json({ message: "Не вдалося оформити замовлення" });
     }
 });
+app.get('/api/admin/order',authenticateToken, async (req, res) => {
+    try {
+        // Отримання всіх замовлень з бази даних
+        const orders = await ShopSchema.find();
+
+        res.status(200).json({ orders });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не вдалося отримати замовлення" });
+    }
+});
+// Маршрут для редагування замовлення за ідентифікатором
+app.put('/api/admin/order/:orderId',authenticateToken, async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const updatedOrderData = req.body;
+
+        // Перевірка чи існує замовлення з вказаним ідентифікатором
+        const existingOrder = await ShopSchema.findById(orderId);
+        if (!existingOrder) {
+            return res.status(404).json({ message: "Замовлення не знайдено" });
+        }
+
+        // Оновлення полів замовлення
+        Object.assign(existingOrder, updatedOrderData);
+
+        // Збереження оновленого замовлення у базі даних
+        await existingOrder.save();
+
+        res.status(200).json({ message: "Замовлення успішно оновлено", order: existingOrder });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не вдалося оновити замовлення" });
+    }
+});
+// Маршрут для редагування поля acrivePosition за ідентифікатором замовлення
+app.patch('/api/admin/orders/:orderId/active-position',authenticateToken, async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+        const newActivePosition = req.body.activePosition;
+
+        // Перевірка чи існує замовлення з вказаним ідентифікатором
+        const existingOrder = await ShopSchema.findById(orderId);
+        if (!existingOrder) {
+            return res.status(404).json({ message: "Замовлення не знайдено" });
+        }
+
+        // Перевірка чи передано коректне значення для поля activePosition
+        if (!['нове', 'обробка', 'відмова', 'виконано'].includes(newActivePosition)) {
+            return res.status(400).json({ message: "Неприпустиме значення для поля activePosition" });
+        }
+
+        // Оновлення поля activePosition
+        existingOrder.acrivePosition = newActivePosition;
+
+        // Збереження оновленого замовлення у базі даних
+        await existingOrder.save();
+
+        res.status(200).json({ message: "Позиція успішно оновлена", order: existingOrder });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не вдалося оновити позицію" });
+    }
+});
+// Маршрут для видалення замовлення за ідентифікатором
+app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
+    try {
+        const orderId = req.params.orderId;
+
+        // Перевірка чи існує замовлення з вказаним ідентифікатором
+        const existingOrder = await ShopSchema.findById(orderId);
+        if (!existingOrder) {
+            return res.status(404).json({ message: "Замовлення не знайдено" });
+        }
+
+        // Видалення замовлення з бази даних
+        await existingOrder.remove();
+
+        res.status(200).json({ message: "Замовлення успішно видалено" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не вдалося видалити замовлення" });
+    }
+});
+
 
 bot.launch().then(() => {
     console.log('Bot started');
