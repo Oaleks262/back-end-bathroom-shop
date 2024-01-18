@@ -11,7 +11,7 @@ import {loginValidator} from "./validation/auth.js";
 import UserModel from "./model/user.js"
 import ShopSchema from "./model/shop.js"
 import ProductSchema from "./model/product.js"
-import { Telegraf } from "telegraf";
+import { Telegraf , Markup} from "telegraf";
 import axios from 'axios';
 
 
