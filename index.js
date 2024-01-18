@@ -226,7 +226,7 @@ app.delete('/api/admin/product/:productId',authenticateToken, async (req, res) =
 });
 
 
-app.post('/api/admin/order',authenticateToken, async (req, res) => {
+app.post('/api/order', async (req, res) => {
     try {
         const { firstName, lastName, phoneNumber, city, postOffice, numberPost, productItem } = req.body;
 
@@ -244,7 +244,7 @@ app.post('/api/admin/order',authenticateToken, async (req, res) => {
             postOffice,
             numberPost,
             productItem,
-            acrivePosition,
+            acrivePosition: 'new',
         });
 
         // Збереження замовлення у базі даних
@@ -304,7 +304,7 @@ app.patch('/api/admin/orders/:orderId/active-position',authenticateToken, async 
         }
 
         // Перевірка чи передано коректне значення для поля activePosition
-        if (!['нове', 'обробка', 'відмова', 'виконано'].includes(newActivePosition)) {
+        if (!['new', 'processing', 'rejection', 'done'].includes(newActivePosition)) {
             return res.status(400).json({ message: "Неприпустиме значення для поля activePosition" });
         }
 
@@ -344,7 +344,7 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
 
 //Telegram-bot
 bot.start((ctx) => {
-ctx.reply('Вітаю! Я бот для замовлень. Використовуйте кнопки для взаємодії.', {
+ctx.reply('Вітаю! Я бот для адміністратора. Використовуйте кнопки для взаємодії.', {
     reply_markup: {
         keyboard: [
             ['📋 Вивести продукти'],
@@ -352,7 +352,6 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
         resize_keyboard: true,
     }
 });
-
   });
   
   // Код для виведення всіх продуктів з кнопками редагування і видалення
@@ -425,7 +424,7 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
         // Перевірка, чи існує продукт з вказаним ID
         const existingProduct = await Product.findById(productId);
         if (existingProduct) {
-            const confirmationKeyboard = Markup.keyboard([['Так', 'Ні']]).resize().oneTime().extra();
+            const confirmationKeyboard = Markup.keyboard([['Так', 'Ні']]).resize().oneTime();
             ctx.reply('Ви впевнені, що хочете видалити цей продукт?', confirmationKeyboard);
   
             // Обробник клавіатурних кнопок
