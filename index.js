@@ -412,7 +412,7 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
             ctx.reply(`Ви редагуєте продукт:\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову назву:`);
   
             // Обробник введення нової назви
-            bot.on('text', async (ctx) => {
+            const textHandler = async (ctx) => {
                 const newTitle = ctx.message.text;
   
                 // Ваш код для оновлення назви продукту
@@ -421,8 +421,11 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
                 await existingProduct.save();
   
                 ctx.reply('Назву продукту оновлено успішно.');
-                bot.removeListener('text'); // Видаляємо обробник після завершення редагування
-            });
+                bot.off('text', textHandler); // Видаляємо обробник після завершення редагування
+            };
+
+            // Додаємо обробник введення тексту
+            bot.on('text', textHandler);
         } else {
             ctx.reply('Продукт не знайдено.');
         }
@@ -430,7 +433,7 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
         console.error(error);
         ctx.reply('Помилка під час редагування продукту.');
     }
-  });
+});
   
   // Команда для видалення продукту
   bot.command('deleteProduct', async (ctx) => {
