@@ -356,28 +356,24 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
   });
   
   // Код для виведення всіх продуктів з кнопками редагування і видалення
-bot.hears('📋 Вивести продукти', async (ctx) => {
+  bot.hears('📋 Вивести продукти', async (ctx) => {
     try {
         const allProducts = await Product.find();
-  
+
         if (allProducts.length > 0) {
-            const productButtons = allProducts.map(product => {
+            const productMessages = allProducts.map(product => {
                 const editButton = Markup.button.callback('🖊️ Редагувати', `editProduct_${product._id}`);
                 const deleteButton = Markup.button.callback('🗑️ Видалити', `deleteProduct_${product._id}`);
-                
-                return [
-                    `Артикуль: ${product.itemProduct}`,
-                    `Назва: ${product.titleProduct}`,
-                    `Опис: ${product.aboutProduct}`,
-                    `Ціна: ${product.priceProduct}`,
-                    editButton,
-                    deleteButton,
-                    '------'
-                ];
+
+                return `
+                    Артикуль: ${product.itemProduct}
+                    Назва: ${product.titleProduct}
+                    Опис: ${product.aboutProduct}
+                    Ціна: ${product.priceProduct}
+                ${editButton} ${deleteButton} ------`;
             });
 
-            const keyboard = Markup.keyboard(productButtons).resize();
-            ctx.reply('Ваші продукти:', keyboard);
+            ctx.reply(productMessages.join('\n'));
         } else {
             ctx.reply('Немає доступних продуктів.');
         }
@@ -386,6 +382,7 @@ bot.hears('📋 Вивести продукти', async (ctx) => {
         ctx.reply('Помилка під час отримання продуктів.');
     }
 });
+
 
 // Обробник для редагування обраного продукту
 bot.action(/^editProduct_(.+)$/, async (ctx) => {
