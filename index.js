@@ -392,7 +392,7 @@ bot.action(/^editProduct_(.+)$/, async (ctx) => {
         // Перевірка, чи існує продукт з вказаним ID
         const existingProduct = await Product.findById(productId);
         if (existingProduct) {
-            ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову назву:`);
+            ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову ціну:`);
   
             // Обробник введення нової назви
             const textHandler = async (ctx) => {
@@ -402,7 +402,7 @@ bot.action(/^editProduct_(.+)$/, async (ctx) => {
                 existingProduct.priceProduct = newPrice;
                 await existingProduct.save();
   
-                ctx.reply('Назву продукту оновлено успішно.');
+                ctx.reply('Ціну продукту оновлено успішно.');
                 bot.off('text', textHandler); // Видаляємо обробник після завершення редагування
             };
 
