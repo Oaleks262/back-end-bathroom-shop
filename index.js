@@ -361,19 +361,19 @@ ctx.reply('Вітаю! Я бот для замовлень. Використов
         const allProducts = await Product.find();
 
         if (allProducts.length > 0) {
-            const productMessages = allProducts.map(product => {
+            for (const product of allProducts) {
                 const editButton = Markup.button.callback('🖊️ Редагувати', `editProduct_${product._id}`);
                 const deleteButton = Markup.button.callback('🗑️ Видалити', `deleteProduct_${product._id}`);
 
-                return `
+                const productMessage = `
                     Артикуль: ${product.itemProduct}
                     Назва: ${product.titleProduct}
                     Опис: ${product.aboutProduct}
                     Ціна: ${product.priceProduct}
-                ${editButton} ${deleteButton} ------`;
-            });
+                `;
 
-            ctx.reply(productMessages.join('\n'));
+                await ctx.reply(productMessage, Markup.inlineKeyboard([editButton, deleteButton]));
+            }
         } else {
             ctx.reply('Немає доступних продуктів.');
         }
