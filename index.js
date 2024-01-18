@@ -396,10 +396,10 @@ bot.action(/^editProduct_(.+)$/, async (ctx) => {
   
             // Обробник введення нової назви
             const textHandler = async (ctx) => {
-                const newTitle = ctx.message.text;
+                const newPrice = ctx.message.text;
   
-                // Ваш код для оновлення назви продукту
-                existingProduct.titleProduct = newTitle;
+                // Ваш код для оновлення ціни
+                existingProduct.priceProduct = newPrice;
                 await existingProduct.save();
   
                 ctx.reply('Назву продукту оновлено успішно.');
@@ -425,10 +425,11 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
         // Перевірка, чи існує продукт з вказаним ID
         const existingProduct = await Product.findById(productId);
         if (existingProduct) {
-            ctx.reply('Ви впевнені, що хочете видалити цей продукт? (Так/Ні)');
+            const confirmationKeyboard = Markup.keyboard([['Так', 'Ні']]).resize().oneTime().extra();
+            ctx.reply('Ви впевнені, що хочете видалити цей продукт?', confirmationKeyboard);
   
-            // Обробник введення користувача
-            const textHandler = async (ctx) => {
+            // Обробник клавіатурних кнопок
+            const buttonHandler = async (ctx) => {
                 const userResponse = ctx.message.text.toLowerCase();
   
                 if (userResponse === 'так') {
@@ -436,15 +437,17 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
                     await existingProduct.remove();
   
                     ctx.reply('Продукт видалено успішно.');
-                } else {
+                } else if (userResponse === 'ні') {
                     ctx.reply('Видалення продукту скасовано.');
+                } else {
+                    ctx.reply('Будь ласка, виберіть "Так" або "Ні".');
                 }
   
-                bot.off('text', textHandler); // Видаляємо обробник після завершення видалення
+                bot.off('text', buttonHandler); // Видаляємо обробник після завершення видалення
             };
 
-            // Додаємо обробник введення тексту
-            bot.on('text', textHandler);
+            // Додаємо обробник клавіатурних кнопок
+            bot.on('text', buttonHandler);
         } else {
             ctx.reply('Продукт не знайдено.');
         }
@@ -453,6 +456,7 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
         ctx.reply('Помилка під час видалення продукту.');
     }
 });
+
 
 bot.launch().then(() => {
     console.log('Bot started');
