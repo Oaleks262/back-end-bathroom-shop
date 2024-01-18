@@ -15,7 +15,7 @@ const basketShopSchema = new mongoose.Schema({
     },
     total: {
         type: Number,
-        set: function (value) {
+        default: function () {
             return this.quantity * this.price;
         },
     }
