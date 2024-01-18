@@ -15,7 +15,6 @@ const basketShopSchema = new mongoose.Schema({
     },
     total: {
         type: Number,
-        required: true,
     },
 });
 
@@ -49,7 +48,7 @@ const ShopSchema = new mongoose.Schema({
         required: true,
     },
     numberPost:{
-        type:Number,
+        type: String,
         required: true,
     },
     productItems: {
