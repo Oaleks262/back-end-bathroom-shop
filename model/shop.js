@@ -15,15 +15,12 @@ const basketShopSchema = new mongoose.Schema({
     },
     total: {
         type: Number,
-    },
+        set: function (value) {
+            return this.quantity * this.price;
+        },
+    }
 });
 
-// Додавання middleware для обчислення загальної ціни перед збереженням
-basketShopSchema.pre('save', function (next) {
-    // Обчислення загальної ціни
-    this.total = this.quantity * this.price;
-    next();
-});
 
 const ShopSchema = new mongoose.Schema({
 
