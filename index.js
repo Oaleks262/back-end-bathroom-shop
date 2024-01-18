@@ -13,7 +13,7 @@ import ShopSchema from "./model/shop.js"
 import ProductSchema from "./model/product.js"
 import Product from './model/product.js';
 import { Telegraf , Markup} from "telegraf";
-import axios from 'axios';
+
 
 
 
@@ -376,7 +376,7 @@ bot.hears('📋 Вивести продукти', async (ctx) => {
                 ];
             });
 
-            const keyboard = Markup.keyboard(productButtons).resize().extra();
+            const keyboard = Markup.keyboard(productButtons).resize();
             ctx.reply('Ваші продукти:', keyboard);
         } else {
             ctx.reply('Немає доступних продуктів.');
