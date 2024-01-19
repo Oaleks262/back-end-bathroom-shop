@@ -491,145 +491,144 @@ bot.hears('🏠 Повернутися на сайт', (ctx) => {
 
 
 bot.command('admin', async (ctx) => {
-
-                    ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
-                        reply_markup: {
-                            keyboard: [
-                                ['📋 Вивести продукти'],
-                                ['🛒 Вивести замовлення'],
-                                ['💬 Вивести відгуки']
-                            ],
-                            resize_keyboard: true,
-                        }
-                    });
-                
-                // Код для виведення всіх продуктів з кнопками редагування і видалення
-                bot.hears('📋 Вивести продукти', async (ctx) => {
-                    // Виведення продуктів при натисканні кнопки
-                    await showAllProducts(ctx);
-                });
-                // Обробник для редагування обраного продукту
-                bot.action(/^editProduct_(.+)$/, async (ctx) => {
-                    try {
-                        const productId = ctx.match[1];
-                  
-                        // Перевірка, чи існує продукт з вказаним ID
-                        const existingProduct = await Product.findById(productId);
-                        if (existingProduct) {
-                            ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову ціну:`);
-                  
-                            // Обробник введення нової назви
-                            const textHandler = async (ctx) => {
-                                const newPrice = ctx.message.text;
-                  
-                                // Ваш код для оновлення ціни
-                                existingProduct.priceProduct = newPrice;
-                                await existingProduct.save();
-                  
-                                ctx.reply('Ціну продукту оновлено успішно.');
-                                bot.removeListener('text', textHandler); // Видаляємо обробник після завершення редагування
-                
-                                await showAllProducts(ctx);
-                            };
-                
-                            // Додаємо обробник введення тексту
-                            bot.on('text', textHandler);
-                        } else {
-                            ctx.reply('Продукт не знайдено.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply('Помилка під час редагування продукту.');
-                    }
-                });
-                
-                bot.hears('🛒 Вивести замовлення', async (ctx) => {
-                    await showAllOrders(ctx);
-                });
-                // Функція для відображення всіх замовлень
-                async function showAllOrders(ctx) {
-                    try {
-                        const allShop = await Shop.find();
-                
-                        if (allShop.length > 0) {
-                            for (const shop of allShop) {
-                                const editButton = Markup.button.callback('🖊️ Редагувати статус', `editShopStatus_${shop._id}`);
-                
-                                const shopMessage = `
-                                    Id: ${shop._id}
-                                    ФІО: ${shop.firstName} ${shop.lastName}
-                                    Номер телефону: ${shop.phoneNumber}
-                                    Місто: ${shop.city}
-                                    Пошта: ${shop.postOffice}
-                                    Відділення: ${shop.numberPost}
-                                    Товар: ${shop.productItems}
-                                    Статус: ${shop.acrivePosition}
-                                `;
-                
-                                await ctx.reply(shopMessage, Markup.inlineKeyboard([editButton]));
-                            }
-                        } else {
-                            ctx.reply('Немає доступних замовлень.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply('Помилка під час відтворення замовлення.');
-                    }
-                }
-                // Обробник для запуску редагування статусу
-                bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
-                    try {
-                        const shopId = ctx.match[1];
-                
-                        // Перевірка, чи існує замовлення з вказаним ID
-                        const existingShop = await Shop.findById(shopId);
-                        if (existingShop) {
-                            const buttons = ['🟡 Нове', '🟠 В обробці', '🔴 Відхилено', '🟢 Виконано'];
-                
-                            const markup = Markup.inlineKeyboard(
-                                buttons.map((button) => Markup.button.callback(button, `editShopStatus_${shopId}_${button.toLowerCase()}`))
-                            );
-                
-                            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, markup);
-                        } else {
-                            ctx.reply('Замовлення не знайдено.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply('Помилка під час редагування статусу замовлення.');
-                    }
-                });
-                
-                // Обробник для зміни статусу замовлення
-                bot.hears('💬 Вивести відгуки', async (ctx) => {
-                    await showAllFeedback(ctx);
-                });
-                
-                async function showAllFeedback(ctx) {
-                    try {
-                        const allFeedback = await Feedback.find();
-                
-                        if (allFeedback.length > 0) {
-                            for (const feedback of allFeedback) {
-                                const feedbackMessage = `
-                                    Id: ${feedback._id}
-                                    ФІО: ${feedback.fullName}
-                                    Дата: ${feedback.date}
-                                    Відгук: ${feedback.feedback}
-                                `;
-                                // Виводимо кожен відгук
-                                ctx.reply(feedbackMessage);
-                            }
-                        } else {
-                            ctx.reply('Немає доступних відгуків.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply('Помилка під час відтворення відгуків.');
-                    }
-                }
-               
+    ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
+        reply_markup: {
+            keyboard: [
+                ['📋 Вивести продукти'],
+                ['🛒 Вивести замовлення'],
+                ['💬 Вивести відгуки']
+            ],
+            resize_keyboard: true,
+        }
+    });
+});            
+// Код для виведення всіх продуктів з кнопками редагування і видалення
+bot.hears('📋 Вивести продукти', async (ctx) => {
+    // Виведення продуктів при натисканні кнопки
+    await showAllProducts(ctx);
 });
+// Обробник для редагування обраного продукту
+bot.action(/^editProduct_(.+)$/, async (ctx) => {
+    try {
+        const productId = ctx.match[1];
+    
+        // Перевірка, чи існує продукт з вказаним ID
+        const existingProduct = await Product.findById(productId);
+        if (existingProduct) {
+            ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову ціну:`);
+    
+            // Обробник введення нової назви
+            const textHandler = async (ctx) => {
+                const newPrice = ctx.message.text;
+    
+                // Ваш код для оновлення ціни
+                existingProduct.priceProduct = newPrice;
+                await existingProduct.save();
+    
+                ctx.reply('Ціну продукту оновлено успішно.');
+                bot.removeListener('text', textHandler); // Видаляємо обробник після завершення редагування
+
+                await showAllProducts(ctx);
+            };
+
+            // Додаємо обробник введення тексту
+            bot.on('text', textHandler);
+        } else {
+            ctx.reply('Продукт не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час редагування продукту.');
+    }
+});
+
+bot.hears('🛒 Вивести замовлення', async (ctx) => {
+    await showAllOrders(ctx);
+});
+// Функція для відображення всіх замовлень
+async function showAllOrders(ctx) {
+    try {
+        const allShop = await Shop.find();
+
+        if (allShop.length > 0) {
+            for (const shop of allShop) {
+                const editButton = Markup.button.callback('🖊️ Редагувати статус', `editShopStatus_${shop._id}`);
+
+                const shopMessage = `
+                    Id: ${shop._id}
+                    ФІО: ${shop.firstName} ${shop.lastName}
+                    Номер телефону: ${shop.phoneNumber}
+                    Місто: ${shop.city}
+                    Пошта: ${shop.postOffice}
+                    Відділення: ${shop.numberPost}
+                    Товар: ${shop.productItems}
+                    Статус: ${shop.acrivePosition}
+                `;
+
+                await ctx.reply(shopMessage, Markup.inlineKeyboard([editButton]));
+            }
+        } else {
+            ctx.reply('Немає доступних замовлень.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час відтворення замовлення.');
+    }
+}
+// Обробник для запуску редагування статусу
+bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
+    try {
+        const shopId = ctx.match[1];
+
+        // Перевірка, чи існує замовлення з вказаним ID
+        const existingShop = await Shop.findById(shopId);
+        if (existingShop) {
+            const buttons = ['🟡 Нове', '🟠 В обробці', '🔴 Відхилено', '🟢 Виконано'];
+
+            const markup = Markup.inlineKeyboard(
+                buttons.map((button) => Markup.button.callback(button, `editShopStatus_${shopId}_${button.toLowerCase()}`))
+            );
+
+            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, markup);
+        } else {
+            ctx.reply('Замовлення не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час редагування статусу замовлення.');
+    }
+});
+
+// Обробник для зміни статусу замовлення
+bot.hears('💬 Вивести відгуки', async (ctx) => {
+    await showAllFeedback(ctx);
+});
+
+async function showAllFeedback(ctx) {
+    try {
+        const allFeedback = await Feedback.find();
+
+        if (allFeedback.length > 0) {
+            for (const feedback of allFeedback) {
+                const feedbackMessage = `
+                    Id: ${feedback._id}
+                    ФІО: ${feedback.fullName}
+                    Дата: ${feedback.date}
+                    Відгук: ${feedback.feedback}
+                `;
+                // Виводимо кожен відгук
+                ctx.reply(feedbackMessage);
+            }
+        } else {
+            ctx.reply('Немає доступних відгуків.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час відтворення відгуків.');
+    }
+}
+
+
 
 
 
