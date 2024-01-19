@@ -347,7 +347,7 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
 app.post('/api/feedback', async (req, res) => {
     try {
         const { fullName, feedback } = req.body;
-        const newFeedback = new Feedback({ fullName, feedback });
+        const newFeedback = new FeedbackSchema({ fullName, feedback });
         await newFeedback.save();
         res.status(201).json({ success: true, message: 'Відгук збережено успішно.' });
     } catch (error) {
@@ -357,7 +357,7 @@ app.post('/api/feedback', async (req, res) => {
 });
 app.get('/api/feedback', async (req, res) => {
     try {
-        const feedbackList = await Feedback.find().sort({ date: -1 });
+        const feedbackList = await FeedbackSchema.find().sort({ date: -1 });
         res.status(200).json({ success: true, feedbackList });
     } catch (error) {
         console.error('Помилка при отриманні відгуків:', error);
@@ -386,7 +386,7 @@ const showAllProducts = async (ctx) => {
                     Ціна: ${product.priceProduct}
                 `;
 
-                await ctx.reply(productMessage, Markup.inlineKeyboard([editButton, deleteButton]));
+                await ctx.reply(productMessage, Markup.inlineKeyboard([editButton]));
             }
         } else {
             ctx.reply('Немає доступних продуктів.');
@@ -396,9 +396,7 @@ const showAllProducts = async (ctx) => {
         ctx.reply('Помилка під час отримання продуктів.');
     }
 };
-// login bot 
-// const loginBot = process.env.loginAdminBot
-// const passwordBot = process.env.passwordAdminBot
+
 
 //Telegram-bot
 bot.start(async (ctx) => {
