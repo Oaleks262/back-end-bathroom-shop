@@ -486,6 +486,7 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
 bot.hears('🛒 Вивести замовлення', async (ctx) => {
     await showAllOrders(ctx);
 });
+// Функція для відображення всіх замовлень
 async function showAllOrders(ctx) {
     try {
         const allShop = await Shop.find();
@@ -516,6 +517,8 @@ async function showAllOrders(ctx) {
         ctx.reply('Помилка під час відтворення замовлення.');
     }
 }
+
+// Обробник для запуску редагування статусу
 bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
     try {
         const shopId = ctx.match[1];
@@ -523,12 +526,13 @@ bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
         // Перевірка, чи існує замовлення з вказаним ID
         const existingShop = await Shop.findById(shopId);
         if (existingShop) {
-            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, Markup.inlineKeyboard([
-                Markup.button.callback('🟡 Нове', `editShopStatus_${shopId}_new`),
-                Markup.button.callback('🟠 В обробці', `editShopStatus_${shopId}_processing`),
-                Markup.button.callback('🔴 Відхилено', `editShopStatus_${shopId}_rejection`),
-                Markup.button.callback('🟢 Виконано', `editShopStatus_${shopId}_done`),
-            ]));
+            const buttons = ['🟡 Нове', '🟠 В обробці', '🔴 Відхилено', '🟢 Виконано'];
+
+            const markup = Markup.inlineKeyboard(
+                buttons.map((button) => Markup.button.callback(button, `editShopStatus_${shopId}_${button.toLowerCase()}`))
+            );
+
+            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, markup);
         } else {
             ctx.reply('Замовлення не знайдено.');
         }
@@ -537,13 +541,16 @@ bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
         ctx.reply('Помилка під час редагування статусу замовлення.');
     }
 });
-// Обробники для конкретних статусів
-bot.action(/^editShopStatus_(.+)_(new|processing|rejection|done)$/, async (ctx) => {
+
+// Обробник для зміни статусу замовлення
+bot.action(/^editShopStatus_(.+)_([a-z]+)$/, async (ctx) => {
     const shopId = ctx.match[1];
     const newStatus = ctx.match[2];
+
     await handleStatusChange(ctx, shopId, newStatus);
-    await showAllOrders(ctx)
+    await showAllOrders(ctx);
 });
+
 async function handleStatusChange(ctx, shopId, newStatus) {
     try {
         // Перевірка, чи існує замовлення з вказаним ID
@@ -561,6 +568,8 @@ async function handleStatusChange(ctx, shopId, newStatus) {
         ctx.reply(`Помилка під час редагування статусу замовлення на "${newStatus}".`);
     }
 }
+
+// Обробник для видалення замовлення
 bot.action(/^deleteShop_(.+)$/, async (ctx) => {
     try {
         const shopId = ctx.match[1];
@@ -580,16 +589,14 @@ bot.action(/^deleteShop_(.+)$/, async (ctx) => {
                     await existingShop.remove();
 
                     ctx.reply('Замовлення видалено успішно.');
-                    await showAllOrders(ctx); // Функція для оновлення виведення замовлень
+                    await showAllOrders(ctx); // Оновлення виведення замовлень
                 } else if (userResponse === 'ні') {
                     ctx.reply('Видалення замовлення скасовано.');
-                    await showAllOrders(ctx)
                 } else {
                     ctx.reply('Будь ласка, виберіть "Так" або "Ні".');
                 }
 
                 bot.off('text', buttonHandler); // Видаляємо обробник після завершення видалення
-                await showAllOrders(ctx)
             };
 
             // Додаємо обробник клавіатурних кнопок
