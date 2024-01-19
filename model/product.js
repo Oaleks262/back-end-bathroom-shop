@@ -14,7 +14,7 @@ titleProduct:{
 aboutProduct:{ 
     type: String,
     required: true,
-    maxlength: 400,
+    maxlength: 1000,
 },
 priceProduct:{
     type:Number,
