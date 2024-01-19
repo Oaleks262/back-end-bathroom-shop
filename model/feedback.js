@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const FeedbackSchema = new mongoose.Schema({
-    fullNane: {
+    fullName: {
         type: String,
         required: true,
     },
@@ -9,7 +9,10 @@ const FeedbackSchema = new mongoose.Schema({
         type: String,
         required: true,
         maxlength: 1000,
-    }
+    },
+    date: { type: Date, 
+        default: Date.now 
+    },
     
     })
     

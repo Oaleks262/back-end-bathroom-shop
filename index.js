@@ -344,6 +344,32 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/api/feedback', async (req, res) => {
+    try {
+        const { fullName, feedback } = req.body;
+        const newFeedback = new Feedback({ fullName, feedback });
+        await newFeedback.save();
+        res.status(201).json({ success: true, message: 'Відгук збережено успішно.' });
+    } catch (error) {
+        console.error('Помилка при збереженні відгуку:', error);
+        res.status(500).json({ success: false, message: 'Помилка при збереженні відгуку.' });
+    }
+});
+app.get('/api/feedback', async (req, res) => {
+    try {
+        const feedbackList = await Feedback.find().sort({ date: -1 });
+        res.status(200).json({ success: true, feedbackList });
+    } catch (error) {
+        console.error('Помилка при отриманні відгуків:', error);
+        res.status(500).json({ success: false, message: 'Помилка при отриманні відгуків.' });
+    }
+});
+
+
+
+
+
+
 const showAllProducts = async (ctx) => {
     try {
         const allProducts = await Product.find();
@@ -371,8 +397,8 @@ const showAllProducts = async (ctx) => {
     }
 };
 // login bot 
-const loginBot = process.env.loginAdminBot
-const passwordBot = process.env.passwordAdminBot
+// const loginBot = process.env.loginAdminBot
+// const passwordBot = process.env.passwordAdminBot
 
 //Telegram-bot
 bot.start(async (ctx) => {
@@ -463,7 +489,8 @@ bot.hears('🏠 Повернутися на сайт', (ctx) => {
     ctx.replyWithHTML(`Переходьте на <a href="${websiteLink}">сайт</a>.`);
 });
 
-
+const loginBot = "Tasia";
+const passwordBot = "bathroom";
 
 bot.command('admin', async (ctx) => {
     ctx.reply('Введіть логін:');
