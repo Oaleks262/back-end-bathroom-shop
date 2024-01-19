@@ -228,11 +228,10 @@ app.delete('/api/admin/product/:productId',authenticateToken, async (req, res) =
 
 app.post('/api/order', async (req, res) => {
     try {
-        console.log(req.body);
-        const { firstName, lastName, phoneNumber, city, postOffice, numberPost, productItem } = req.body;
+        const { firstName, lastName, phoneNumber, city, postOffice, numberPost, productItems } = req.body;
 
         // Валідація даних запиту (можливо, вам захочеться додати більше логіки валідації)
-        if (!firstName || !lastName || !phoneNumber || !city || !postOffice || !numberPost || !productItem) {
+        if (!firstName || !lastName || !phoneNumber || !city || !postOffice || !numberPost || !productItems) {
             return res.status(400).json({ message: "Будь ласка, надайте всі обов'язкові поля." });
         }
 
@@ -244,7 +243,7 @@ app.post('/api/order', async (req, res) => {
             city,
             postOffice,
             numberPost,
-            productItem,
+            productItems,
             acrivePosition: 'new',
         });
 
