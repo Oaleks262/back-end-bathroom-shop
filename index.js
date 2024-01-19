@@ -10,6 +10,7 @@ import {validationResult} from "express-validator";
 import {loginValidator} from "./validation/auth.js";
 import UserModel from "./model/user.js"
 import ShopSchema from "./model/shop.js"
+import Shop from "./model/shop.js"
 import ProductSchema from "./model/product.js"
 import Product from './model/product.js';
 import { Telegraf , Markup} from "telegraf";
@@ -341,21 +342,7 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
     }
 });
 
-
-//Telegram-bot
-bot.start((ctx) => {
-ctx.reply('Вітаю! Я бот для адміністратора. Використовуйте кнопки для взаємодії.', {
-    reply_markup: {
-        keyboard: [
-            ['📋 Вивести продукти'],
-        ],
-        resize_keyboard: true,
-    }
-});
-  });
-  
-  // Код для виведення всіх продуктів з кнопками редагування і видалення
-  bot.hears('📋 Вивести продукти', async (ctx) => {
+const showAllProducts = async (ctx) => {
     try {
         const allProducts = await Product.find();
 
@@ -380,9 +367,45 @@ ctx.reply('Вітаю! Я бот для адміністратора. Викор
         console.error(error);
         ctx.reply('Помилка під час отримання продуктів.');
     }
+};
+//Telegram-bot
+bot.command('start', async (ctx) => {
+    
+    ctx.reply('Введіть номер телефону для перевірки статусу замовлення:');
+
+    
+    const phoneHandler = async (ctx) => {
+        const phoneNumber = ctx.message.text;
+
+        const order = await Shop.findOne({ phoneNumber: phoneNumber });
+
+        if (order) {
+            ctx.reply(`Статус замовлення для номеру телефону ${phoneNumber}: ${order.acrivePosition}`);
+        } else {
+            ctx.reply(`Замовлення з номером телефону ${phoneNumber} не знайдено.`);
+        }
+        bot.off('text', phoneHandler);
+    };
+
+    // Додаємо обробник тексту для отримання номеру телефону
+    bot.on('text', phoneHandler);
 });
-
-
+bot.command('admin', async (ctx) => {
+    ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
+        reply_markup: {
+            keyboard: [
+                ['📋 Вивести продукти'],
+                ['🛒 Вивести замовлення']
+            ],
+            resize_keyboard: true,
+        }
+    });
+});
+// Код для виведення всіх продуктів з кнопками редагування і видалення
+bot.hears('📋 Вивести продукти', async (ctx) => {
+    // Виведення продуктів при натисканні кнопки
+    await showAllProducts(ctx);
+});
 // Обробник для редагування обраного продукту
 bot.action(/^editProduct_(.+)$/, async (ctx) => {
     try {
@@ -403,6 +426,8 @@ bot.action(/^editProduct_(.+)$/, async (ctx) => {
   
                 ctx.reply('Ціну продукту оновлено успішно.');
                 bot.off('text', textHandler); // Видаляємо обробник після завершення редагування
+
+                await showAllProducts(ctx);
             };
 
             // Додаємо обробник введення тексту
@@ -415,7 +440,6 @@ bot.action(/^editProduct_(.+)$/, async (ctx) => {
         ctx.reply('Помилка під час редагування продукту.');
     }
 });
-
 // Обробник для видалення обраного продукту
 bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
     try {
@@ -436,13 +460,17 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
                     await existingProduct.remove();
   
                     ctx.reply('Продукт видалено успішно.');
+
+                    await showAllProducts(ctx);
                 } else if (userResponse === 'ні') {
                     ctx.reply('Видалення продукту скасовано.');
+                    await showAllProducts(ctx);
                 } else {
                     ctx.reply('Будь ласка, виберіть "Так" або "Ні".');
                 }
   
                 bot.off('text', buttonHandler); // Видаляємо обробник після завершення видалення
+                await showAllProducts(ctx);
             };
 
             // Додаємо обробник клавіатурних кнопок
@@ -455,7 +483,125 @@ bot.action(/^deleteProduct_(.+)$/, async (ctx) => {
         ctx.reply('Помилка під час видалення продукту.');
     }
 });
+bot.hears('🛒 Вивести замовлення', async (ctx) => {
+    await showAllOrders(ctx);
+});
+async function showAllOrders(ctx) {
+    try {
+        const allShop = await Shop.find();
 
+        if (allShop.length > 0) {
+            for (const shop of allShop) {
+                const editButton = Markup.button.callback('🖊️ Редагувати статус', `editShopStatus_${shop._id}`);
+                const deleteButton = Markup.button.callback('🗑️ Видалити', `deleteShop_${shop._id}`);
+
+                const shopMessage = `
+                    Id: ${shop._id}
+                    ФІО: ${shop.firstName} ${shop.lastName}
+                    Номер телефону: ${shop.phoneNumber}
+                    Місто: ${shop.city}
+                    Пошта: ${shop.postOffice}
+                    Відділення: ${shop.numberPost}
+                    Товар: ${shop.productItems}
+                    Статус: ${shop.acrivePosition}
+                `;
+
+                await ctx.reply(shopMessage, Markup.inlineKeyboard([editButton, deleteButton]));
+            }
+        } else {
+            ctx.reply('Немає доступних замовлень.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час відтворення замовлення.');
+    }
+}
+bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
+    try {
+        const shopId = ctx.match[1];
+
+        // Перевірка, чи існує замовлення з вказаним ID
+        const existingShop = await Shop.findById(shopId);
+        if (existingShop) {
+            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, Markup.inlineKeyboard([
+                Markup.button.callback('🟡 Нове', `editShopStatus_${shopId}_new`),
+                Markup.button.callback('🟠 В обробці', `editShopStatus_${shopId}_processing`),
+                Markup.button.callback('🔴 Відхилено', `editShopStatus_${shopId}_rejection`),
+                Markup.button.callback('🟢 Виконано', `editShopStatus_${shopId}_done`),
+            ]));
+        } else {
+            ctx.reply('Замовлення не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час редагування статусу замовлення.');
+    }
+});
+// Обробники для конкретних статусів
+bot.action(/^editShopStatus_(.+)_(new|processing|rejection|done)$/, async (ctx) => {
+    const shopId = ctx.match[1];
+    const newStatus = ctx.match[2];
+    await handleStatusChange(ctx, shopId, newStatus);
+    await showAllOrders(ctx)
+});
+async function handleStatusChange(ctx, shopId, newStatus) {
+    try {
+        // Перевірка, чи існує замовлення з вказаним ID
+        const existingShop = await Shop.findById(shopId);
+        if (existingShop) {
+            existingShop.acrivePosition = newStatus;
+            await existingShop.save();
+
+            ctx.reply(`Статус замовлення оновлено на "${newStatus}" успішно.`);
+        } else {
+            ctx.reply('Замовлення не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply(`Помилка під час редагування статусу замовлення на "${newStatus}".`);
+    }
+}
+bot.action(/^deleteShop_(.+)$/, async (ctx) => {
+    try {
+        const shopId = ctx.match[1];
+
+        // Перевірка, чи існує замовлення з вказаним ID
+        const existingShop = await Shop.findById(shopId);
+        if (existingShop) {
+            const confirmationKeyboard = Markup.keyboard([['Так', 'Ні']]).resize().oneTime();
+            ctx.reply('Ви впевнені, що хочете видалити це замовлення?', confirmationKeyboard);
+
+            // Обробник клавіатурних кнопок
+            const buttonHandler = async (ctx) => {
+                const userResponse = ctx.message.text.toLowerCase();
+
+                if (userResponse === 'так') {
+                    // Ваш код для видалення замовлення
+                    await existingShop.remove();
+
+                    ctx.reply('Замовлення видалено успішно.');
+                    await showAllOrders(ctx); // Функція для оновлення виведення замовлень
+                } else if (userResponse === 'ні') {
+                    ctx.reply('Видалення замовлення скасовано.');
+                    await showAllOrders(ctx)
+                } else {
+                    ctx.reply('Будь ласка, виберіть "Так" або "Ні".');
+                }
+
+                bot.off('text', buttonHandler); // Видаляємо обробник після завершення видалення
+                await showAllOrders(ctx)
+            };
+
+            // Додаємо обробник клавіатурних кнопок
+            bot.on('text', buttonHandler);
+        } else {
+            ctx.reply('Замовлення не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час видалення замовлення.');
+    }
+});
 
 bot.launch().then(() => {
     console.log('Bot started');
