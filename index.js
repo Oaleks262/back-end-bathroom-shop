@@ -575,31 +575,6 @@ bot.command('admin', async (ctx) => {
                         ctx.reply('Помилка під час відтворення замовлення.');
                     }
                 }
-                bot.hears('💬 Вивести відгуки', async (ctx) => {
-                    await showAllFeedback(ctx);
-                });
-                async function showAllFeedback(ctx) {
-                    try {
-                        const allFeedback = await Feedback.find();
-                
-                        if (allFeedback.length > 0) {
-                            for (const feedback of allFeedback) {
-                                
-                
-                                const feedbackMessage = `
-                                    Id: ${feedback._id}
-                                    ФІО: ${feedback.firstName}
-                                    Датф: ${feedback.date}
-                                `;
-                            }
-                        } else {
-                            ctx.reply('Немає доступних відгуків.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply('Помилка під час відтворення відгуків.');
-                    }
-                }
                 // Обробник для запуску редагування статусу
                 bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
                     try {
@@ -648,6 +623,31 @@ bot.command('admin', async (ctx) => {
                     } catch (error) {
                         console.error(error);
                         ctx.reply(`Помилка під час редагування статусу замовлення на "${newStatus}".`);
+                    }
+                }
+                bot.hears('💬 Вивести відгуки', async (ctx) => {
+                    await showAllFeedback(ctx);
+                });
+                async function showAllFeedback(ctx) {
+                    try {
+                        const allFeedback = await Feedback.find();
+                
+                        if (allFeedback.length > 0) {
+                            for (const feedback of allFeedback) {
+                                
+                
+                                const feedbackMessage = `
+                                    Id: ${feedback._id}
+                                    ФІО: ${feedback.firstName}
+                                    Датф: ${feedback.date}
+                                `;
+                            }
+                        } else {
+                            ctx.reply('Немає доступних відгуків.');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        ctx.reply('Помилка під час відтворення відгуків.');
                     }
                 }
                
