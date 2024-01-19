@@ -615,7 +615,7 @@ bot.command('admin', async (ctx) => {
                                     Id: ${feedback._id}
                                     ФІО: ${feedback.fullName}
                                     Дата: ${feedback.date}
-                                    Відгук: ${feedback.feedBack}
+                                    Відгук: ${feedback.feedback}
                                 `;
                                 // Виводимо кожен відгук
                                 ctx.reply(feedbackMessage);
