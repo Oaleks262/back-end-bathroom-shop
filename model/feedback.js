@@ -5,7 +5,7 @@ const FeedbackSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    feedBack:{
+    feedback:{
         type: String,
         required: true,
         maxlength: 1000,
