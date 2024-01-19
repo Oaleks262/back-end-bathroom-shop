@@ -51,7 +51,6 @@ const ShopSchema = new mongoose.Schema({
     },
     acrivePosition: {
         type: String,
-        required: true,
     }
 
 })
