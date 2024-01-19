@@ -489,31 +489,16 @@ bot.hears('🏠 Повернутися на сайт', (ctx) => {
     ctx.replyWithHTML(`Переходьте на <a href="${websiteLink}">сайт</a>.`);
 });
 
-const loginBot = "Tasia";
-const passwordBot = "bathroom";
+
 
 bot.command('admin', async (ctx) => {
-    ctx.reply('Введіть логін:');
-
-    // Очікуємо логін від користувача
-    bot.on('text', async (loginCtx) => {
-        const loginText = loginCtx.message.text;
-
-        if (loginText === loginBot) {
-            ctx.reply('Введіть пароль:');
-
-            // Очікуємо пароль від користувача
-            bot.on('text', async (passwordCtx) => {
-                const passwordText = passwordCtx.message.text;
-
-                if (passwordText === passwordBot) {
-                    // Логін та пароль вірні, виконуємо код для адміна
 
                     ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
                         reply_markup: {
                             keyboard: [
                                 ['📋 Вивести продукти'],
-                                ['🛒 Вивести замовлення']
+                                ['🛒 Вивести замовлення'],
+                                ['💬 Вивести відгуки']
                             ],
                             resize_keyboard: true,
                         }
@@ -592,7 +577,31 @@ bot.command('admin', async (ctx) => {
                         ctx.reply('Помилка під час відтворення замовлення.');
                     }
                 }
+                bot.hears('💬 Вивести відгуки', async (ctx) => {
+                    await showAllFeedback(ctx);
+                });
+                async function showAllFeedback(ctx) {
+                    try {
+                        const allFeedback = await Feedback.find();
                 
+                        if (allFeedback.length > 0) {
+                            for (const feedback of allFeedback) {
+                                
+                
+                                const feedbackMessage = `
+                                    Id: ${feedback._id}
+                                    ФІО: ${feedback.firstName}
+                                    Датф: ${feedback.date}
+                                `;
+                            }
+                        } else {
+                            ctx.reply('Немає доступних відгуків.');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        ctx.reply('Помилка під час відтворення відгуків.');
+                    }
+                }
                 // Обробник для запуску редагування статусу
                 bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
                     try {
@@ -643,16 +652,7 @@ bot.command('admin', async (ctx) => {
                         ctx.reply(`Помилка під час редагування статусу замовлення на "${newStatus}".`);
                     }
                 }
-                } else {
-                    ctx.reply('Неправильний пароль.');
-                    ctx.telegram.sendCommand(ctx.from.id, 'start'); // Викликаємо команду /start
-                }
-            });
-        } else {
-            ctx.reply('Неправильний логін.');
-            ctx.telegram.sendCommand(ctx.from.id, 'start');
-        }
-    });
+               
 });
 
 
