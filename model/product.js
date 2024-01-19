@@ -11,6 +11,10 @@ titleProduct:{
     required: true,
     maxlength: 200,
 },
+category: {
+    type: String,
+    required: true,
+},
 aboutProduct:{ 
     type: String,
     required: true,

@@ -170,6 +170,7 @@ app.post('/api/admin/product', authenticateToken, async (req, res) => {
                 avatarUrl,
                 itemProduct,
                 titleProduct,
+                category,
                 aboutProduct,
                 priceProduct,
             });
