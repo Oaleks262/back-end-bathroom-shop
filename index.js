@@ -454,7 +454,7 @@ bot.hears('✍️ Залишити відгук', async (ctx) => {
             ctx.session = { fullName };
 
             // Видаляємо обробник після завершення вводу ім'я
-            bot.removeListener('text', nameHandler);
+            bot.off('text', nameHandler);
         };
 
         // Обробник для отримання відгуку
@@ -471,7 +471,7 @@ bot.hears('✍️ Залишити відгук', async (ctx) => {
             ctx.reply('Дякуємо за ваш відгук!');
 
             // Видаляємо обробник після завершення вводу відгуку
-            bot.removeListener('text', feedbackHandler);
+            bot.off('text', feedbackHandler);
         };
 
         // Додаємо обробник для введення ім'я
@@ -600,47 +600,24 @@ bot.command('admin', async (ctx) => {
                 });
                 
                 // Обробник для зміни статусу замовлення
-                bot.action(/^editShopStatus_(.+)_([a-z]+)$/, async (ctx) => {
-                    const shopId = ctx.match[1];
-                    const newStatus = ctx.match[2];
-                
-                    await handleStatusChange(ctx, shopId, newStatus);
-                    await showAllOrders(ctx);
-                });
-                
-                async function handleStatusChange(ctx, shopId, newStatus) {
-                    try {
-                        // Перевірка, чи існує замовлення з вказаним ID
-                        const existingShop = await Shop.findById(shopId);
-                        if (existingShop) {
-                            existingShop.acrivePosition = newStatus;
-                            await existingShop.save();
-                
-                            ctx.reply(`Статус замовлення оновлено на "${newStatus}" успішно.`);
-                        } else {
-                            ctx.reply('Замовлення не знайдено.');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        ctx.reply(`Помилка під час редагування статусу замовлення на "${newStatus}".`);
-                    }
-                }
                 bot.hears('💬 Вивести відгуки', async (ctx) => {
                     await showAllFeedback(ctx);
                 });
+                
                 async function showAllFeedback(ctx) {
                     try {
                         const allFeedback = await Feedback.find();
                 
                         if (allFeedback.length > 0) {
                             for (const feedback of allFeedback) {
-                                
-                
                                 const feedbackMessage = `
                                     Id: ${feedback._id}
-                                    ФІО: ${feedback.firstName}
-                                    Датф: ${feedback.date}
+                                    ФІО: ${feedback.fullName}
+                                    Дата: ${feedback.date}
+                                    Відгук: ${feedback.feedBack}
                                 `;
+                                // Виводимо кожен відгук
+                                ctx.reply(feedbackMessage);
                             }
                         } else {
                             ctx.reply('Немає доступних відгуків.');
