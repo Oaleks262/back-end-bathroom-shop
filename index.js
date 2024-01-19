@@ -645,13 +645,11 @@ bot.command('admin', async (ctx) => {
                 }
                 } else {
                     ctx.reply('Неправильний пароль.');
-                    ctx.scene.leave(); // Покидаємо сцену
                     ctx.telegram.sendCommand(ctx.from.id, 'start'); // Викликаємо команду /start
                 }
             });
         } else {
             ctx.reply('Неправильний логін.');
-            ctx.scene.leave(); // Покидаємо сцену
             ctx.telegram.sendCommand(ctx.from.id, 'start');
         }
     });
