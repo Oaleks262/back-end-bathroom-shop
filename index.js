@@ -16,7 +16,6 @@ import Product from './model/product.js';
 import Feedback from "./model/feedback.js";
 import FeedbackSchema from "./model/feedback.js";
 import { Telegraf , Markup} from "telegraf";
-import TelegramBot from "node-telegram-bot-api";
 
 
 
@@ -27,7 +26,7 @@ const dbConnectionString = process.env.DB_CONNECTION_STRING;
 const secretKey = process.env.SECRET_KEY;
 const botToken = '6892150968:AAFwvoDUEsp2_xrMfNobKhR9EY1qqSWMxpA';
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 2222
 
 mongoose.connect(dbConnectionString)
 .then(()=>{console.log('DB ok')})
@@ -38,7 +37,7 @@ app.use(cors());
 app.use(express.json());
 
 shortid.characters('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-');
-// const bot = new Telegraf(botToken);
+const bot = new Telegraf(botToken);
 
 app.post('/api/auth/login', loginValidator, async (req, res) => {
     try {
@@ -346,7 +345,6 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
     }
 });
 
-
 app.post('/api/feedback', async (req, res) => {
     try {
         const { fullName, feedback } = req.body;
@@ -367,301 +365,43 @@ app.get('/api/feedback', async (req, res) => {
         res.status(500).json({ success: false, message: 'Помилка при отриманні відгуків.' });
     }
 });
-app.get('/api/admin/feedback',authenticateToken, async (req, res) => {
+
+
+
+
+
+
+const showAllProducts = async (ctx) => {
     try {
-        const feedbackList = await FeedbackSchema.find().sort({ date: -1 });
-        res.status(200).json({ success: true, feedbackList });
-    } catch (error) {
-        console.error('Помилка при отриманні відгуків:', error);
-        res.status(500).json({ success: false, message: 'Помилка при отриманні відгуків.' });
-    }
-});
-app.delete('/api/admin/feedback/:id',authenticateToken, async (req, res) => {
-    const feedbackId = req.params.id;
+        const allProducts = await Product.find();
 
-    try {
-        // Перевірте, чи існує фідбек з вказаним ідентифікатором
-        const existingFeedback = await FeedbackSchema.findById(feedbackId);
-        if (!existingFeedback) {
-            return res.status(404).json({ success: false, message: 'Фідбек не знайдений.' });
-        }
-
-        // Виконайте видалення фідбеку
-        await existingFeedback.remove();
-
-        res.status(200).json({ success: true, message: 'Фідбек успішно видалений.' });
-    } catch (error) {
-        console.error('Помилка при видаленні фідбеку:', error);
-        res.status(500).json({ success: false, message: 'Помилка при видаленні фідбеку.' });
-    }
-});
-
-
-
-
-
-// const showAllProducts = async (ctx) => {
-//     try {
-//         const allProducts = await Product.find();
-
-//         if (allProducts.length > 0) {
-//             for (const product of allProducts) {
-//                 const editButton = Markup.button.callback('🖊️ Редагувати', `editProduct_${product._id}`);
+        if (allProducts.length > 0) {
+            for (const product of allProducts) {
+                const editButton = Markup.button.callback('🖊️ Редагувати', `editProduct_${product._id}`);
                
 
-//                 const productMessage = `
-//                     Артикуль: ${product.itemProduct}
-//                     Назва: ${product.titleProduct}
-//                     Опис: ${product.aboutProduct}
-//                     Ціна: ${product.priceProduct}
-//                 `;
+                const productMessage = `
+                    Артикуль: ${product.itemProduct}
+                    Назва: ${product.titleProduct}
+                    Опис: ${product.aboutProduct}
+                    Ціна: ${product.priceProduct}
+                `;
 
-//                 await ctx.reply(productMessage, Markup.inlineKeyboard([editButton]));
-//             }
-//         } else {
-//             ctx.reply('Немає доступних продуктів.');
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка під час отримання продуктів.');
-//     }
-// };
-// //Telegram-bot
-// bot.start(async (ctx) => {
-//     ctx.reply('Вітаю! Я бот Bathroom Shop. Чим я можу Вам допомогти?', {
-//         reply_markup: {
-//             keyboard: [
-//                 ['📊 Перевірити статус замовлення'],
-//                 ['✍️ Залишити відгук'],
-//                 ['🏠 Повернутися на сайт']
-//             ],
-//             resize_keyboard: true,
-//         }
-//     });
-// });
-// bot.hears('📊 Перевірити статус замовлення', async (ctx) => { 
-//     ctx.reply('Введіть номер телефону для перевірки статусу замовлення:');
-
-    
-//     const phoneHandler = async (ctx) => {
-//         const phoneNumber = ctx.message.text;
-
-//         const order = await Shop.findOne({ phoneNumber: phoneNumber });
-
-//         if (order) {
-//             ctx.reply(`Статус замовлення для номеру телефону ${phoneNumber}: ${order.acrivePosition}`);
-//         } else {
-//             ctx.reply(`Замовлення з номером телефону ${phoneNumber} не знайдено.`);
-//         }
-//         bot.removeListener('text', phoneHandler);
-//     };
-
-//     // Додаємо обробник тексту для отримання номеру телефону
-//     bot.on('text', phoneHandler);
-// });
-// bot.hears('✍️ Залишити відгук', async (ctx) => {
-//     try {
-//         ctx.reply('Введіть своє ім\'я:');
-
-//         // Обробник для отримання ім'я
-//         const nameHandler = async (ctx) => {
-//             const fullName = ctx.message.text;
-
-//             // Перевірка, чи ім'я не містить символів нового рядка
-//             if (fullName.includes('\n')) {
-//                 ctx.reply('Ім\'я не повинно містити символів нового рядка. Будь ласка, введіть ще раз:');
-//                 return;
-//             }
-
-//             ctx.reply('Тепер введіть свій відгук:');
-
-//             // Додаємо обробник для введення відгуку
-//             bot.on('text', feedbackHandler);
-
-//             // Зберігаємо ім'я в контексті
-//             ctx.session = { fullName };
-
-//             // Видаляємо обробник після завершення вводу ім'я
-//             bot.off('text', nameHandler);
-//         };
-
-//         // Обробник для отримання відгуку
-//         const feedbackHandler = async (ctx) => {
-//             const userFeedback = ctx.message.text;
-
-//             // Зберігаємо відгук у базу даних
-//             const newFeedback = new Feedback({
-//                 fullName: ctx.session.fullName,
-//                 feedBack: userFeedback,
-//             });
-//             await newFeedback.save();
-
-//             ctx.reply('Дякуємо за ваш відгук!');
-
-//             // Видаляємо обробник після завершення вводу відгуку
-//             bot.off('text', feedbackHandler);
-//         };
-
-//         // Додаємо обробник для введення ім'я
-//         bot.on('text', nameHandler);
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка при обробці відгуку.');
-//     }
-// });
-// bot.hears('🏠 Повернутися на сайт', (ctx) => {
-//     const websiteLink = 'https://www.instagram.com/black_street_191/'; // Замініть це на ваше посилання
-
-//     ctx.replyWithHTML(`Переходьте на <a href="${websiteLink}">сайт</a>.`);
-// });
-// bot.command('admin', async (ctx) => {
-//     ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
-//         reply_markup: {
-//             keyboard: [
-//                 ['📋 Вивести продукти'],
-//                 ['🛒 Вивести замовлення'],
-//                 ['💬 Вивести відгуки']
-//             ],
-//             resize_keyboard: true,
-//         }
-//     });
-// });            
-// // Код для виведення всіх продуктів з кнопками редагування і видалення
-// bot.hears('📋 Вивести продукти', async (ctx) => {
-//     // Виведення продуктів при натисканні кнопки
-//     await showAllProducts(ctx);
-// });
-// // Обробник для редагування обраного продукту
-// bot.action(/^editProduct_(.+)$/, async (ctx) => {
-//     try {
-//         const productId = ctx.match[1];
-    
-//         // Перевірка, чи існує продукт з вказаним ID
-//         const existingProduct = await Product.findById(productId);
-//         if (existingProduct) {
-//             ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову ціну:`);
-    
-//             // Обробник введення нової назви
-//             const textHandler = async (ctx) => {
-//                 const newPrice = ctx.message.text;
-    
-//                 // Ваш код для оновлення ціни
-//                 existingProduct.priceProduct = newPrice;
-//                 await existingProduct.save();
-    
-//                 ctx.reply('Ціну продукту оновлено успішно.');
-//                 bot.removeListener('text', textHandler); // Видаляємо обробник після завершення редагування
-
-//                 await showAllProducts(ctx);
-//             };
-
-//             // Додаємо обробник введення тексту
-//             bot.on('text', textHandler);
-//         } else {
-//             ctx.reply('Продукт не знайдено.');
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка під час редагування продукту.');
-//     }
-// });
-
-// bot.hears('🛒 Вивести замовлення', async (ctx) => {
-//     await showAllOrders(ctx);
-// });
-// // Функція для відображення всіх замовлень
-// async function showAllOrders(ctx) {
-//     try {
-//         const allShop = await Shop.find();
-
-//         if (allShop.length > 0) {
-//             for (const shop of allShop) {
-//                 const editButton = Markup.button.callback('🖊️ Редагувати статус', `editShopStatus_${shop._id}`);
-
-//                 const shopMessage = `
-//                     Id: ${shop._id}
-//                     ФІО: ${shop.firstName} ${shop.lastName}
-//                     Номер телефону: ${shop.phoneNumber}
-//                     Місто: ${shop.city}
-//                     Пошта: ${shop.postOffice}
-//                     Відділення: ${shop.numberPost}
-//                     Товар: ${shop.productItems}
-//                     Статус: ${shop.acrivePosition}
-//                 `;
-
-//                 await ctx.reply(shopMessage, Markup.inlineKeyboard([editButton]));
-//             }
-//         } else {
-//             ctx.reply('Немає доступних замовлень.');
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка під час відтворення замовлення.');
-//     }
-// }
-// // Обробник для запуску редагування статусу
-// bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
-//     try {
-//         const shopId = ctx.match[1];
-
-//         // Перевірка, чи існує замовлення з вказаним ID
-//         const existingShop = await Shop.findById(shopId);
-//         if (existingShop) {
-//             const buttons = ['🟡 Нове', '🟠 В обробці', '🔴 Відхилено', '🟢 Виконано'];
-
-//             const markup = Markup.inlineKeyboard(
-//                 buttons.map((button) => Markup.button.callback(button, `editShopStatus_${shopId}_${button.toLowerCase()}`))
-//             );
-
-//             ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, markup);
-//         } else {
-//             ctx.reply('Замовлення не знайдено.');
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка під час редагування статусу замовлення.');
-//     }
-// });
-
-// // Обробник для зміни статусу замовлення
-// bot.hears('💬 Вивести відгуки', async (ctx) => {
-//     await showAllFeedback(ctx);
-// });
-
-// async function showAllFeedback(ctx) {
-//     try {
-//         const allFeedback = await Feedback.find();
-
-//         if (allFeedback.length > 0) {
-//             for (const feedback of allFeedback) {
-//                 const feedbackMessage = `
-//                     Id: ${feedback._id}
-//                     ФІО: ${feedback.fullName}
-//                     Дата: ${feedback.date}
-//                     Відгук: ${feedback.feedback}
-//                 `;
-//                 // Виводимо кожен відгук
-//                 ctx.reply(feedbackMessage);
-//             }
-//         } else {
-//             ctx.reply('Немає доступних відгуків.');
-//         }
-//     } catch (error) {
-//         console.error(error);
-//         ctx.reply('Помилка під час відтворення відгуків.');
-//     }
-// }
-// bot.launch().then(() => {
-//     console.log('Bot started');
-// });
+                await ctx.reply(productMessage, Markup.inlineKeyboard([editButton]));
+            }
+        } else {
+            ctx.reply('Немає доступних продуктів.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час отримання продуктів.');
+    }
+};
 
 
-
-const bot = new TelegramBot(botToken, { polling: true });
-// Обробка команди /start
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Вітаю! Я бот Bathroom Shop. Чим я можу Вам допомогти?', {
+//Telegram-bot
+bot.start(async (ctx) => {
+    ctx.reply('Вітаю! Я бот Bathroom Shop. Чим я можу Вам допомогти?', {
         reply_markup: {
             keyboard: [
                 ['📊 Перевірити статус замовлення'],
@@ -672,86 +412,232 @@ bot.onText(/\/start/, (msg) => {
         }
     });
 });
+bot.hears('📊 Перевірити статус замовлення', async (ctx) => { 
+    ctx.reply('Введіть номер телефону для перевірки статусу замовлення:');
 
-// Обробка команди для перевірки статусу замовлення
-bot.onText(/📊 Перевірити статус замовлення/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Введіть номер телефону для перевірки статусу замовлення:');
+    
+    const phoneHandler = async (ctx) => {
+        const phoneNumber = ctx.message.text;
 
-    const phoneHandler = (msg) => {
-        const phoneNumber = msg.text;
+        const order = await Shop.findOne({ phoneNumber: phoneNumber });
 
-        Shop.findOne({ phoneNumber: phoneNumber }, (err, order) => {
-            if (order) {
-                bot.sendMessage(chatId, `Статус замовлення для номеру телефону ${phoneNumber}: ${order.acrivePosition}`);
-            } else {
-                bot.sendMessage(chatId, `Замовлення з номером телефону ${phoneNumber} не знайдено.`);
-            }
-        });
-
+        if (order) {
+            ctx.reply(`Статус замовлення для номеру телефону ${phoneNumber}: ${order.acrivePosition}`);
+        } else {
+            ctx.reply(`Замовлення з номером телефону ${phoneNumber} не знайдено.`);
+        }
         bot.removeListener('text', phoneHandler);
     };
 
+    // Додаємо обробник тексту для отримання номеру телефону
     bot.on('text', phoneHandler);
 });
+bot.hears('✍️ Залишити відгук', async (ctx) => {
+    try {
+        ctx.reply('Введіть своє ім\'я:');
 
-// Обробка команди для залишення відгуку
-bot.onText(/✍️ Залишити відгук/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, 'Введіть своє ім\'я:');
+        // Обробник для отримання ім'я
+        const nameHandler = async (ctx) => {
+            const fullName = ctx.message.text;
 
-    const nameHandler = (msg) => {
-        const fullName = msg.text;
+            // Перевірка, чи ім'я не містить символів нового рядка
+            if (fullName.includes('\n')) {
+                ctx.reply('Ім\'я не повинно містити символів нового рядка. Будь ласка, введіть ще раз:');
+                return;
+            }
 
-        if (fullName.includes('\n')) {
-            bot.sendMessage(chatId, 'Ім\'я не повинно містити символів нового рядка. Будь ласка, введіть ще раз:');
-            return;
-        }
+            ctx.reply('Тепер введіть свій відгук:');
 
-        bot.sendMessage(chatId, 'Тепер введіть свій відгук:');
+            // Додаємо обробник для введення відгуку
+            bot.on('text', feedbackHandler);
 
-        const feedbackHandler = (msg) => {
-            const userFeedback = msg.text;
+            // Зберігаємо ім'я в контексті
+            ctx.session = { fullName };
 
-            const newFeedback = new Feedback({
-                fullName: fullName,
-                feedBack: userFeedback,
-            });
-
-            newFeedback.save((err) => {
-                if (err) {
-                    console.error(err);
-                    bot.sendMessage(chatId, 'Помилка при збереженні відгуку.');
-                } else {
-                    bot.sendMessage(chatId, 'Дякуємо за ваш відгук!');
-                }
-            });
-
-            bot.removeListener('text', feedbackHandler);
+            // Видаляємо обробник після завершення вводу ім'я
+            bot.off('text', nameHandler);
         };
 
-        bot.on('text', feedbackHandler);
-        bot.removeListener('text', nameHandler);
-    };
+        // Обробник для отримання відгуку
+        const feedbackHandler = async (ctx) => {
+            const userFeedback = ctx.message.text;
 
-    bot.on('text', nameHandler);
+            // Зберігаємо відгук у базу даних
+            const newFeedback = new Feedback({
+                fullName: ctx.session.fullName,
+                feedBack: userFeedback,
+            });
+            await newFeedback.save();
+
+            ctx.reply('Дякуємо за ваш відгук!');
+
+            // Видаляємо обробник після завершення вводу відгуку
+            bot.off('text', feedbackHandler);
+        };
+
+        // Додаємо обробник для введення ім'я
+        bot.on('text', nameHandler);
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка при обробці відгуку.');
+    }
 });
-
-// Обробка команди для повернення на сайт
-bot.onText(/🏠 Повернутися на сайт/, (msg) => {
-    const chatId = msg.chat.id;
+bot.hears('🏠 Повернутися на сайт', (ctx) => {
     const websiteLink = 'https://www.instagram.com/black_street_191/'; // Замініть це на ваше посилання
 
-    bot.sendMessage(chatId, `Переходьте на <a href="${websiteLink}">сайт</a>.`, { parse_mode: 'HTML' });
+    ctx.replyWithHTML(`Переходьте на <a href="${websiteLink}">сайт</a>.`);
 });
 
 
 
+bot.command('admin', async (ctx) => {
+    ctx.reply('Вітаю, адміністратор! Використовуйте кнопки для взаємодії.', {
+        reply_markup: {
+            keyboard: [
+                ['📋 Вивести продукти'],
+                ['🛒 Вивести замовлення'],
+                ['💬 Вивести відгуки']
+            ],
+            resize_keyboard: true,
+        }
+    });
+});            
+// Код для виведення всіх продуктів з кнопками редагування і видалення
+bot.hears('📋 Вивести продукти', async (ctx) => {
+    // Виведення продуктів при натисканні кнопки
+    await showAllProducts(ctx);
+});
+// Обробник для редагування обраного продукту
+bot.action(/^editProduct_(.+)$/, async (ctx) => {
+    try {
+        const productId = ctx.match[1];
+    
+        // Перевірка, чи існує продукт з вказаним ID
+        const existingProduct = await Product.findById(productId);
+        if (existingProduct) {
+            ctx.reply(`Ви редагуєте продукт:\nАртикуль: ${existingProduct.itemProduct}\nНазва: ${existingProduct.titleProduct}\nОпис: ${existingProduct.aboutProduct}\nЦіна: ${existingProduct.priceProduct}\n\nВведіть нову ціну:`);
+    
+            // Обробник введення нової назви
+            const textHandler = async (ctx) => {
+                const newPrice = ctx.message.text;
+    
+                // Ваш код для оновлення ціни
+                existingProduct.priceProduct = newPrice;
+                await existingProduct.save();
+    
+                ctx.reply('Ціну продукту оновлено успішно.');
+                bot.removeListener('text', textHandler); // Видаляємо обробник після завершення редагування
+
+                await showAllProducts(ctx);
+            };
+
+            // Додаємо обробник введення тексту
+            bot.on('text', textHandler);
+        } else {
+            ctx.reply('Продукт не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час редагування продукту.');
+    }
+});
+
+bot.hears('🛒 Вивести замовлення', async (ctx) => {
+    await showAllOrders(ctx);
+});
+// Функція для відображення всіх замовлень
+async function showAllOrders(ctx) {
+    try {
+        const allShop = await Shop.find();
+
+        if (allShop.length > 0) {
+            for (const shop of allShop) {
+                const editButton = Markup.button.callback('🖊️ Редагувати статус', `editShopStatus_${shop._id}`);
+
+                const shopMessage = `
+                    Id: ${shop._id}
+                    ФІО: ${shop.firstName} ${shop.lastName}
+                    Номер телефону: ${shop.phoneNumber}
+                    Місто: ${shop.city}
+                    Пошта: ${shop.postOffice}
+                    Відділення: ${shop.numberPost}
+                    Товар: ${shop.productItems}
+                    Статус: ${shop.acrivePosition}
+                `;
+
+                await ctx.reply(shopMessage, Markup.inlineKeyboard([editButton]));
+            }
+        } else {
+            ctx.reply('Немає доступних замовлень.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час відтворення замовлення.');
+    }
+}
+// Обробник для запуску редагування статусу
+bot.action(/^editShopStatus_(.+)$/, async (ctx) => {
+    try {
+        const shopId = ctx.match[1];
+
+        // Перевірка, чи існує замовлення з вказаним ID
+        const existingShop = await Shop.findById(shopId);
+        if (existingShop) {
+            const buttons = ['🟡 Нове', '🟠 В обробці', '🔴 Відхилено', '🟢 Виконано'];
+
+            const markup = Markup.inlineKeyboard(
+                buttons.map((button) => Markup.button.callback(button, `editShopStatus_${shopId}_${button.toLowerCase()}`))
+            );
+
+            ctx.reply(`Ви готові редагувати статус замовлення:\n\n${existingShop.acrivePosition}\n\nНатисніть кнопку для зміни статусу:`, markup);
+        } else {
+            ctx.reply('Замовлення не знайдено.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час редагування статусу замовлення.');
+    }
+});
+
+// Обробник для зміни статусу замовлення
+bot.hears('💬 Вивести відгуки', async (ctx) => {
+    await showAllFeedback(ctx);
+});
+
+async function showAllFeedback(ctx) {
+    try {
+        const allFeedback = await Feedback.find();
+
+        if (allFeedback.length > 0) {
+            for (const feedback of allFeedback) {
+                const feedbackMessage = `
+                    Id: ${feedback._id}
+                    ФІО: ${feedback.fullName}
+                    Дата: ${feedback.date}
+                    Відгук: ${feedback.feedback}
+                `;
+                // Виводимо кожен відгук
+                ctx.reply(feedbackMessage);
+            }
+        } else {
+            ctx.reply('Немає доступних відгуків.');
+        }
+    } catch (error) {
+        console.error(error);
+        ctx.reply('Помилка під час відтворення відгуків.');
+    }
+}
 
 
 
-// Запуск бота
-bot.startPolling();
+
+
+
+
+
+bot.launch().then(() => {
+    console.log('Bot started');
+});
 
 app.listen(PORT, (err) => {
     if (err) {
