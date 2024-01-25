@@ -220,7 +220,7 @@ app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), as
 app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
     try {
         const productId = req.params.productId;
-        const { avatarUrl, titleProduct, aboutProduct, priceProduct } = req.body;
+        const { titleProduct, category, aboutProduct, priceProduct } = req.body;
 
         // Перевірка, чи існує товар з вказаним ID
         const existingProduct = await ProductSchema.findById(productId);
@@ -229,10 +229,13 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         }
 
         // Оновлення властивостей товару
-        existingProduct.avatarUrl = avatarUrl;
         existingProduct.titleProduct = titleProduct;
+        existingProduct.category = category;
         existingProduct.aboutProduct = aboutProduct;
         existingProduct.priceProduct = priceProduct;
+
+        
+
 
         // Збереження оновленого товару
         await existingProduct.save();
@@ -243,25 +246,26 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         res.status(500).json({ message: "Не вдалося оновити товар" });
     }
 });
-app.delete('/api/admin/product/:productId',authenticateToken, async (req, res) => {
-        try {
-            const productId = req.params.productId;
+app.delete('/api/admin/product/:productId', authenticateToken, async (req, res) => {
+    try {
+        const productId = req.params.productId;
 
-            // Перевірка, чи існує товар з вказаним ID
-            const existingProduct = await ProductSchema.findById(productId);
-            if (!existingProduct) {
-                return res.status(404).json({ message: "Товар не знайдено" });
-            }
-
-            // Видалення товару
-            await existingProduct.remove();
-
-            res.json({ message: "Товар успішно видалено" });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Не вдалося видалити товар" });
+        // Перевірка, чи існує товар з вказаним ID
+        const existingProduct = await ProductSchema.findById(productId);
+        if (!existingProduct) {
+            return res.status(404).json({ message: "Товар не знайдено" });
         }
+
+        // Видалення товару
+        await ProductSchema.deleteOne({ _id: productId });
+
+        res.json({ message: "Товар успішно видалено" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Не вдалося видалити товар" });
+    }
 });
+
 
 
 app.post('/api/order', async (req, res) => {
