@@ -17,10 +17,7 @@ import Feedback from "./model/feedback.js";
 import FeedbackSchema from "./model/feedback.js";
 import { Telegraf , Markup} from "telegraf";
 import feedback from "./model/feedback.js";
-import multer from 'multer';
-import fs from 'fs-extra';
-import path from 'path';
-import fileUpload from "express-fileupload";
+import multer from "multer";
 
 
 
@@ -38,24 +35,33 @@ mongoose.connect(dbConnectionString)
 .then(()=>{console.log('DB ok')})
 .catch((err)=> {console.log('DB error', err)});
 
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/'); 
+    },
+    filename: function (req, file, cb) {
+      const uniquePrefix = shortid.generate().substring(0, 4);
+      cb(null, uniquePrefix + '_' + file.originalname); // Унікальне ім'я файлу
+    },
+  });
+  
+  const upload = multer({
+    storage: storage,
+    limits: {
+      fileSize: 1024 * 1024 * 5, // 5 MB
+    },
+  });
+
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(fileUpload());
 
 shortid.characters('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-');
 const bot = new Telegraf(botToken);
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, 'public', 'uploads'));
-    },
-    filename: function (req, file, cb) {
-        const imageName = `${shortid.generate()}-${file.originalname}`;
-        cb(null, imageName);
-    }
-});
 
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
 
 
 
@@ -176,43 +182,35 @@ app.get('/api/admin/product',authenticateToken, async (req, res) => {
     }
     
 })
-app.post('/api/admin/product', authenticateToken, async (req, res) => {
+app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), async (req, res) => {
     try {
-        if (!req.files || Object.keys(req.files).length === 0) {
-            return res.status(400).json({ message: 'Фото не було завантажено.' });
-        }
-
-        const { titleProduct, aboutProduct, priceProduct, category } = req.body;
-        const file = req.files.avatar;  // "avatar" повинно відповідати name вашого input з файлами
-
-        // Тут можна обробляти файл (зберігати на сервері, обробляти, тощо)
-        // Наприклад, ви можете використовувати express-fileupload для збереження файлу:
-        const imageName = `${shortid.generate()}-${file.name}`;
-        const imagePath = path.join(__dirname, 'public', 'uploads', imageName);
-        await file.mv(imagePath);
-
-        // Потім ви можете використовувати imagePath або зберегти посилання в базі даних
-        const imageUrl = `/uploads/${imageName}`;
-
-        // Створення нового продукту в базі даних
-        const newProduct = new ProductSchema({
-            avatarUrl: imageUrl,
-            itemProduct: shortid.generate().substring(0, 4),
-            titleProduct,
-            category,
-            aboutProduct,
-            priceProduct,
-        });
-
-        await newProduct.save();
-
-        return res.status(201).json({ message: 'Товар успішно додано', product: newProduct });
+      const { titleProduct, aboutProduct, priceProduct, category } = req.body;
+  
+      if (!titleProduct || !aboutProduct || !priceProduct) {
+        return res.status(400).json({ message: "Please provide all required fields." });
+      }
+  
+      const avatarUrl = req.file ? req.file.path : ''; 
+  
+      const itemProduct = shortid.generate().substring(0, 4);
+  
+      const newProduct = new ProductSchema({
+        avatarUrl,
+        itemProduct,
+        titleProduct,
+        category,
+        aboutProduct,
+        priceProduct,
+      });
+  
+      await newProduct.save();
+  
+      res.status(201).json({ message: "Товар успішно додано", product: newProduct });
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: 'Помилка при завантаженні фото та додаванні інформації' });
+      console.error(error);
+      res.status(500).json({ message: "Помилка при додаванні інформації" });
     }
-});
-
+  });
 app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
     try {
         const productId = req.params.productId;
@@ -225,6 +223,7 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         }
 
         // Оновлення властивостей товару
+        existingProduct.avatarUrl = avatarUrl;
         existingProduct.titleProduct = titleProduct;
         existingProduct.aboutProduct = aboutProduct;
         existingProduct.priceProduct = priceProduct;
