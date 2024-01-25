@@ -189,8 +189,12 @@ app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), as
       if (!titleProduct || !aboutProduct || !priceProduct) {
         return res.status(400).json({ message: "Please provide all required fields." });
       }
-  
-      const avatarUrl = req.file ? req.file.path : ''; 
+      
+        const serverUrl = "https://bathroom-shop-api.onrender.com";
+        const fullUrl = req.file ? req.file.path : '';
+        const avatarUrl = `${serverUrl}/${fullUrl}`;
+
+    //   const avatarUrl = req.file ? req.file.path : ''; 
   
       const itemProduct = shortid.generate().substring(0, 4);
   
