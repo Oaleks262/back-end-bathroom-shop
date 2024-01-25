@@ -400,7 +400,7 @@ app.get('/api/admin/feedback',authenticateToken, async (req, res) => {
     }
 });
 app.delete('/api/admin/feedback/:feedbackId', authenticateToken, async (req, res) => {
-    const feedbackId = req.params.feedbackId;
+    const feedbackId = req.params.id;
   
     try {
       // Ваша логіка для видалення відгуку за його ідентифікатором
@@ -411,7 +411,7 @@ app.delete('/api/admin/feedback/:feedbackId', authenticateToken, async (req, res
       console.error('Помилка при видаленні відгуку:', error);
       res.status(500).json({ success: false, message: 'Помилка при видаленні відгуку.' });
     }
-});
+  });
 
 
 
