@@ -17,6 +17,9 @@ import Feedback from "./model/feedback.js";
 import FeedbackSchema from "./model/feedback.js";
 import { Telegraf , Markup} from "telegraf";
 import feedback from "./model/feedback.js";
+import multer from 'multer';
+import fs from 'fs-extra';
+import path from 'path';
 
 
 
@@ -40,6 +43,19 @@ app.use(express.json());
 
 shortid.characters('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-');
 const bot = new Telegraf(botToken);
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, 'public', 'uploads'));
+    },
+    filename: function (req, file, cb) {
+        const imageName = `${shortid.generate()}-${file.originalname}`;
+        cb(null, imageName);
+    }
+});
+
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+
 
 app.post('/api/auth/login', loginValidator, async (req, res) => {
     try {
@@ -158,33 +174,41 @@ app.get('/api/admin/product',authenticateToken, async (req, res) => {
     }
     
 })
-app.post('/api/admin/product', authenticateToken, async (req, res) => {
-        try {
-            const { avatarUrl, titleProduct, aboutProduct, priceProduct,category } = req.body;
-    
-            const itemProduct = shortid.generate().substring(0, 4);
-    
-            if (!titleProduct || !aboutProduct || !priceProduct) {
-                return res.status(400).json({ message: "Please provide all required fields." });
-            }
-    
-            const newProduct = new ProductSchema({
-                avatarUrl,
-                itemProduct,
-                titleProduct,
-                category,
-                aboutProduct,
-                priceProduct,
-            });
-    
-            await newProduct.save();
-    
-            res.status(201).json({ message: "Товар успішно додано", product: newProduct });
-        } catch (error) {
-            console.error(error); // Log the actual error to the console
-            res.status(500).json({ message: "Помилка при додаванні інформації" });
+app.post('/api/admin/product', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "Фото не було завантажено." });
         }
+
+        const { titleProduct, aboutProduct, priceProduct, category } = req.body;
+
+        // Зберігання зображення на сервері
+        const imageName = `${shortid.generate()}-${req.file.originalname}`;
+        const imagePath = path.join(__dirname, 'public', 'uploads', imageName);
+        await fs.outputFile(imagePath, req.file.buffer);
+
+        // Збереження посилання в базі даних
+        const imageUrl = `/uploads/${imageName}`;
+
+        // Створення нового продукту в базі даних
+        const newProduct = new ProductSchema({
+            avatarUrl: imageUrl,
+            itemProduct: shortid.generate().substring(0, 4),
+            titleProduct,
+            category,
+            aboutProduct,
+            priceProduct,
+        });
+
+        await newProduct.save();
+
+        return res.status(201).json({ message: "Товар успішно додано", product: newProduct });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Помилка при завантаженні фото та додаванні інформації" });
+    }
 });
+
 app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
     try {
         const productId = req.params.productId;
@@ -197,7 +221,6 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         }
 
         // Оновлення властивостей товару
-        existingProduct.avatarUrl = avatarUrl;
         existingProduct.titleProduct = titleProduct;
         existingProduct.aboutProduct = aboutProduct;
         existingProduct.priceProduct = priceProduct;
