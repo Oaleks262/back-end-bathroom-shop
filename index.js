@@ -20,6 +20,7 @@ import feedback from "./model/feedback.js";
 import multer from 'multer';
 import fs from 'fs-extra';
 import path from 'path';
+import fileUpload from "express-fileupload";
 
 
 
@@ -40,6 +41,7 @@ mongoose.connect(dbConnectionString)
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(fileUpload());
 
 shortid.characters('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-');
 const bot = new Telegraf(botToken);
@@ -174,20 +176,22 @@ app.get('/api/admin/product',authenticateToken, async (req, res) => {
     }
     
 })
-app.post('/api/admin/product', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/admin/product', authenticateToken, async (req, res) => {
     try {
-        if (!req.file) {
-            return res.status(400).json({ message: "Фото не було завантажено." });
+        if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).json({ message: 'Фото не було завантажено.' });
         }
 
         const { titleProduct, aboutProduct, priceProduct, category } = req.body;
+        const file = req.files.avatar;  // "avatar" повинно відповідати name вашого input з файлами
 
-        // Зберігання зображення на сервері
-        const imageName = `${shortid.generate()}-${req.file.originalname}`;
+        // Тут можна обробляти файл (зберігати на сервері, обробляти, тощо)
+        // Наприклад, ви можете використовувати express-fileupload для збереження файлу:
+        const imageName = `${shortid.generate()}-${file.name}`;
         const imagePath = path.join(__dirname, 'public', 'uploads', imageName);
-        await fs.outputFile(imagePath, req.file.buffer);
+        await file.mv(imagePath);
 
-        // Збереження посилання в базі даних
+        // Потім ви можете використовувати imagePath або зберегти посилання в базі даних
         const imageUrl = `/uploads/${imageName}`;
 
         // Створення нового продукту в базі даних
@@ -202,10 +206,10 @@ app.post('/api/admin/product', authenticateToken, upload.single('image'), async 
 
         await newProduct.save();
 
-        return res.status(201).json({ message: "Товар успішно додано", product: newProduct });
+        return res.status(201).json({ message: 'Товар успішно додано', product: newProduct });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ message: "Помилка при завантаженні фото та додаванні інформації" });
+        return res.status(500).json({ message: 'Помилка при завантаженні фото та додаванні інформації' });
     }
 });
 
