@@ -217,7 +217,7 @@ app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), as
       res.status(500).json({ message: "Помилка при додаванні інформації" });
     }
   });
-app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
+app.put('/api/admin/product/:productId', authenticateToken, async (req, res) => {
     try {
         const productId = req.params.productId;
         const { titleProduct, category, aboutProduct, priceProduct } = req.body;
@@ -234,9 +234,6 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         existingProduct.aboutProduct = aboutProduct;
         existingProduct.priceProduct = priceProduct;
 
-        
-
-
         // Збереження оновленого товару
         await existingProduct.save();
 
@@ -246,6 +243,7 @@ app.put('/api/admin/product/:productId',authenticateToken, async (req, res) => {
         res.status(500).json({ message: "Не вдалося оновити товар" });
     }
 });
+
 app.delete('/api/admin/product/:productId', authenticateToken, async (req, res) => {
     try {
         const productId = req.params.productId;
