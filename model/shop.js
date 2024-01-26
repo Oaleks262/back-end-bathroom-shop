@@ -3,18 +3,15 @@ import mongoose from "mongoose";
 const basketShopSchema = new mongoose.Schema({
     title: {
         type: String,
-        required: true,
     },
     item: {
         type: String,
     },
     quantity: {
         type: Number,
-        required: true,
     },
     price: {
         type: Number,
-        required: true,
     },
     total: {
         type: Number
