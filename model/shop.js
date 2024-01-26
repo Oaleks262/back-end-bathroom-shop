@@ -7,7 +7,6 @@ const basketShopSchema = new mongoose.Schema({
     },
     item: {
         type: String,
-        required: true,
     },
     quantity: {
         type: Number,
@@ -57,8 +56,9 @@ const ShopSchema = new mongoose.Schema({
         type: [basketShopSchema],
         required: true,
     },
-    acrivePosition: {
+    position: {
         type: String,
+        required: true,
     },
     ttn: {
         type: String,

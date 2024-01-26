@@ -284,7 +284,7 @@ app.post('/api/order', async (req, res) => {
             postOffice,
             numberPost,
             productItems,
-            acrivePosition: 'new',
+            position: 'new',
         });
 
         // Збереження замовлення у базі даних
@@ -308,21 +308,10 @@ app.get('/api/admin/order',authenticateToken, async (req, res) => {
     }
 });
 // Маршрут для редагування замовлення за ідентифікатором
-app.put('/api/admin/order/:orderId', authenticateToken, async (req, res) => {
+app.put('/api/admin/order/:orderId',authenticateToken, async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const {
-            firstName,
-            lastName,
-            phone,
-            city,
-            email,
-            numberPost,
-            productItems,
-            position,
-            ttn,
-            totalAmount
-        } = req.body;
+        const updatedOrderData = req.body;
 
         // Перевірка чи існує замовлення з вказаним ідентифікатором
         const existingOrder = await ShopSchema.findById(orderId);
@@ -331,16 +320,7 @@ app.put('/api/admin/order/:orderId', authenticateToken, async (req, res) => {
         }
 
         // Оновлення полів замовлення
-        existingOrder.firstName = firstName;
-        existingOrder.lastName = lastName;
-        existingOrder.phoneNumber = phone;  // Замість phoneNumber
-        existingOrder.city = city;
-        existingOrder.postOffice = email;
-        existingOrder.numberPost = numberPost;
-        existingOrder.productItems = productItems;
-        existingOrder.acrivePosition = position; 
-        existingOrder.ttn = ttn 
-        existingOrder.totalAmount = totalAmount;
+        Object.assign(existingOrder, updatedOrderData);
 
         // Збереження оновленого замовлення у базі даних
         await existingOrder.save();
@@ -351,7 +331,6 @@ app.put('/api/admin/order/:orderId', authenticateToken, async (req, res) => {
         res.status(500).json({ message: "Не вдалося оновити замовлення" });
     }
 });
-
 // Маршрут для редагування поля acrivePosition за ідентифікатором замовлення
 app.patch('/api/admin/orders/:orderId/active-position',authenticateToken, async (req, res) => {
     try {
