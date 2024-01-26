@@ -316,7 +316,7 @@ app.put('/api/admin/order/:orderId', authenticateToken, async (req, res) => {
             lastName,
             phone,
             city,
-            postOffice,
+            email,
             numberPost,
             productItems,
             position,
