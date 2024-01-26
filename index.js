@@ -370,9 +370,9 @@ app.delete('/api/admin/orders/:orderId',authenticateToken, async (req, res) => {
         if (!existingOrder) {
             return res.status(404).json({ message: "Замовлення не знайдено" });
         }
-
+        
         // Видалення замовлення з бази даних
-        await existingOrder.remove();
+        await ShopSchema.deleteOne({ _id: orderId });
 
         res.status(200).json({ message: "Замовлення успішно видалено" });
     } catch (error) {
