@@ -60,6 +60,9 @@ const ShopSchema = new mongoose.Schema({
     acrivePosition: {
         type: String,
     },
+    ttn: {
+        type: String,
+    },
     totalAmount: {
         type: Number,
     },

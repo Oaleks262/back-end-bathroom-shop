@@ -308,10 +308,21 @@ app.get('/api/admin/order',authenticateToken, async (req, res) => {
     }
 });
 // Маршрут для редагування замовлення за ідентифікатором
-app.put('/api/admin/order/:orderId',authenticateToken, async (req, res) => {
+app.put('/api/admin/order/:orderId', authenticateToken, async (req, res) => {
     try {
         const orderId = req.params.orderId;
-        const updatedOrderData = req.body;
+        const {
+            firstName,
+            lastName,
+            phone,
+            city,
+            postOffice,
+            numberPost,
+            productItems,
+            position,
+            ttn,
+            totalAmount
+        } = req.body;
 
         // Перевірка чи існує замовлення з вказаним ідентифікатором
         const existingOrder = await ShopSchema.findById(orderId);
@@ -320,7 +331,16 @@ app.put('/api/admin/order/:orderId',authenticateToken, async (req, res) => {
         }
 
         // Оновлення полів замовлення
-        Object.assign(existingOrder, updatedOrderData);
+        existingOrder.firstName = firstName;
+        existingOrder.lastName = lastName;
+        existingOrder.phoneNumber = phone;  // Замість phoneNumber
+        existingOrder.city = city;
+        existingOrder.postOffice = postOffice;
+        existingOrder.numberPost = numberPost;
+        existingOrder.productItems = productItems;
+        existingOrder.acrivePosition = position; 
+        existingOrder.ttn = ttn 
+        existingOrder.totalAmount = totalAmount;
 
         // Збереження оновленого замовлення у базі даних
         await existingOrder.save();
@@ -331,6 +351,7 @@ app.put('/api/admin/order/:orderId',authenticateToken, async (req, res) => {
         res.status(500).json({ message: "Не вдалося оновити замовлення" });
     }
 });
+
 // Маршрут для редагування поля acrivePosition за ідентифікатором замовлення
 app.patch('/api/admin/orders/:orderId/active-position',authenticateToken, async (req, res) => {
     try {
