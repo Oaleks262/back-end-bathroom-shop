@@ -8,8 +8,8 @@
   },
   "type": "module",
   "scripts": {
-    "starts": "nodemon index.js",
-    "start": "node index.js"
+    "startdev": "nodemon server.js",
+    "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
@@ -28,6 +28,7 @@
     "mongodb": "^6.3.0",
     "mongoose": "^8.0.4",
     "multer": "^1.4.5-lts.1",
+    "node-telegram-bot-api": "^0.64.0",
     "sharp": "^0.33.2",
     "shortid": "^2.2.16",
     "telegraf": "^4.0.0",
