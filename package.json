@@ -8,8 +8,8 @@
   },
   "type": "module",
   "scripts": {
-    "startdev": "nodemon server.js",
-    "start": "node server.js"
+    "dev": "nodemon index.js",
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
