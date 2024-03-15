@@ -634,6 +634,50 @@ bot.onText(/💬 Вивести відгуки/, async (msg) => {
   await showAllFeedback(chatId);
 });
 // Відображення товарів разом із кнопками "Редагувати" та "Видалити"
+// Оголошення обробника подій поза функцією
+bot.on('callback_query', async query => {
+    const action = query.data.split('_')[0];
+    const productId = query.data.split('_')[2];
+    const chatId = query.message.chat.id;
+
+    try {
+        if (action === 'edit') {
+            const product = await Product.findById(productId);
+
+            if (product) {
+                bot.sendMessage(chatId, `Поточна ціна: ${product.priceProduct}. Введіть нову ціну:`);
+
+                // Обробник подій для введення нової ціни
+                const priceHandler = async msg => {
+                    const newPrice = parseFloat(msg.text);
+
+                    // Видаляємо обробник подій після виконання
+                    bot.removeListener('message', priceHandler);
+
+                    if (!isNaN(newPrice)) {
+                        await Product.findByIdAndUpdate(productId, { priceProduct: newPrice });
+                        bot.sendMessage(chatId, 'Ціна товару успішно оновлена.');
+                    } else {
+                        bot.sendMessage(chatId, 'Некоректно введена ціна. Будь ласка, спробуйте ще раз.');
+                    }
+                };
+
+                // Додаємо обробник подій для введення нової ціни
+                bot.on('message', priceHandler);
+            } else {
+                bot.sendMessage(chatId, 'Товар не знайдено.');
+            }
+        } else if (action === 'delete') {
+            await Product.findByIdAndDelete(productId);
+            bot.sendMessage(chatId, 'Товар успішно видалений.');
+        }
+    } catch (error) {
+        console.error(error);
+        bot.sendMessage(chatId, 'Виникла помилка при обробці запиту.');
+    }
+});
+
+// Функція для виведення всіх продуктів
 async function showAllProducts(chatId) {
     try {
         const allProducts = await Product.find();
@@ -668,50 +712,8 @@ async function showAllProducts(chatId) {
         console.error(error);
         bot.sendMessage(chatId, 'Помилка під час відтворення продуктів.');
     }
-
-    // Обробка натискання кнопок "Редагувати" та "Видалити"
-    bot.on('callback_query', async query => {
-        const action = query.data.split('_')[0];
-        const productId = query.data.split('_')[2];
-        const chatId = query.message.chat.id;
-
-        try {
-            if (action === 'edit') {
-                const product = await Product.findById(productId);
-
-                if (product) {
-                    bot.sendMessage(chatId, `Поточна ціна: ${product.priceProduct}. Введіть нову ціну:`);
-
-                    // Обробник подій для введення нової ціни
-                    const priceHandler = async msg => {
-                        const newPrice = parseFloat(msg.text);
-
-                        // Видаляємо обробник подій після виконання
-                        bot.removeListener('message', priceHandler);
-
-                        if (!isNaN(newPrice)) {
-                            await Product.findByIdAndUpdate(productId, { priceProduct: newPrice });
-                            bot.sendMessage(chatId, 'Ціна товару успішно оновлена.');
-                        } else {
-                            bot.sendMessage(chatId, 'Некоректно введена ціна. Будь ласка, спробуйте ще раз.');
-                        }
-                    };
-
-                    // Додаємо обробник подій для введення нової ціни
-                    bot.on('message', priceHandler);
-                } else {
-                    bot.sendMessage(chatId, 'Товар не знайдено.');
-                }
-            } else if (action === 'delete') {
-                await Product.findByIdAndDelete(productId);
-                bot.sendMessage(chatId, 'Товар успішно видалений.');
-            }
-        } catch (error) {
-            console.error(error);
-            bot.sendMessage(chatId, 'Виникла помилка при обробці запиту.');
-        }
-    });
 }
+
 bot.onText(/💯 Надіслати акційну пропозицію/, (msg) => {
     const chatId = msg.chat.id;
 
