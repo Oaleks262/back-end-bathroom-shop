@@ -479,30 +479,51 @@ bot.onText(/\/start/, async (msg) => {
 // Обробник кнопки "Перевірити статус замовлення"
 bot.onText(/📊 Перевірити статус замовлення/, (msg) => {
   const chatId = msg.chat.id;
-  bot.sendMessage(chatId, 'Введіть номер телефону для перевірки статусу замовлення:');
+  bot.sendMessage(chatId, 'Введіть номер телефону для перевірки статусу замовлення: У форматі +380XXXXXXXXX');
 
   // Обробка відповіді на команду "Перевірити статус замовлення"
   bot.once('text', async (msg) => {
-      const text = msg.text;
-      const chatId = msg.chat.id;
+    const text = msg.text;
+    const chatId = msg.chat.id;
 
-      // Перевірка, чи було введено номер телефону для перевірки статусу замовлення
-      if (text.startsWith('+')) {
-          try {
-              const order = await Shop.findOne({ phoneNumber: text });
+    // Перевірка, чи було введено номер телефону для перевірки статусу замовлення
+    if (text.startsWith('+')) {
+      try {
+        const order = await Shop.findOne({ phoneNumber: text });
 
-              if (order) {
-                  bot.sendMessage(chatId, `Статус замовлення для номеру телефону ${text}: ${order.position}`);
-              } else {
-                  bot.sendMessage(chatId, `Замовлення з номером телефону ${text} не знайдено.`);
-              }
-          } catch (error) {
-              console.error(error);
-              bot.sendMessage(chatId, 'Виникла помилка при перевірці статусу замовлення.');
+        if (order) {
+          let statusMessage = '';
+
+          // Визначення відповідного повідомлення про статус замовлення за допомогою switch
+          switch (order.position) {
+            case 'new':
+              statusMessage = 'Заявка у обробці';
+              break;
+            case 'processing':
+              statusMessage = 'Замовлення у роботі';
+              break;
+            case 'rejection':
+              statusMessage = 'Замовлення скасовано';
+              break;
+            case 'done':
+              statusMessage = `Замовлення відправлено. Номер ТТН: ${order.ttn}`;
+              break;
+            default:
+              statusMessage = 'Статус замовлення невідомий';
           }
+
+          bot.sendMessage(chatId, `Статус замовлення для номеру телефону ${text}: ${statusMessage}`);
+        } else {
+          bot.sendMessage(chatId, `Замовлення з номером телефону ${text} не знайдено.`);
+        }
+      } catch (error) {
+        console.error(error);
+        bot.sendMessage(chatId, 'Виникла помилка при перевірці статусу замовлення.');
       }
+    }
   });
 });
+
 
 
 // Обробник кнопки "Повернутися на сайт"
@@ -769,7 +790,7 @@ function chatAlreadyNotified(chatId) {
 
 
 // Функція для відображення всіх замовлень
-async function showAllOrders(chatId) {
+async function showAllOrders(chatId, isAdmin = false) {
     try {
         const allOrders = await Shop.find();
 
@@ -786,7 +807,17 @@ async function showAllOrders(chatId) {
                     ТТН: ${order.ttn || 'не вказано'}
                     Загальна сума: ${order.totalAmount} грн
                 `;
-                bot.sendMessage(chatId, orderInfo);
+
+
+                 const buttons = {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [{ text: 'Редагувати', callback_data: `edit_${order._id}` }]
+                            ]
+                        })
+                    };
+
+                bot.sendMessage(chatId, orderInfo, buttons);
             });
         } else {
             bot.sendMessage(chatId, 'Немає доступних замовлень.');
@@ -796,6 +827,107 @@ async function showAllOrders(chatId) {
         bot.sendMessage(chatId, 'Помилка під час відтворення замовлень.');
     }
 }
+
+bot.on('callback_query', async (query) => {
+    const [action, orderId, newStatus] = query.data.split('_');
+    try {
+        async function showAllOrders(chatId) {
+            try {
+                const allOrders = await Shop.find();
+
+                if (allOrders.length > 0) {
+                    allOrders.forEach(order => {
+                        const orderInfo = `
+                            ID: ${order._id}
+                            Клієнт: ${order.firstName} ${order.lastName}
+                            Телефон: ${order.phoneNumber}
+                            Місто: ${order.city}
+                            Відділення: ${order.numberPost}
+                            Товар: ${order.productItems.map(item => `${item.title} (${item.quantity} шт.)`).join(', ')}
+                            Статус: ${order.position}
+                            ТТН: ${order.ttn || 'не вказано'}
+                            Загальна сума: ${order.totalAmount} грн
+                        `;
+
+                        let buttons = null;
+                        if (isAdmin) {
+                            buttons = {
+                                reply_markup: JSON.stringify({
+                                    inline_keyboard: [
+                                        [{ text: 'Редагувати', callback_data: `edit_${order._id}` }]
+                                    ]
+                                })
+                            };
+                        }
+
+                        bot.sendMessage(chatId, orderInfo, buttons);
+                    });
+                } else {
+                    bot.sendMessage(chatId, 'Немає доступних замовлень.');
+                }
+            } catch (error) {
+                console.error(error);
+                bot.sendMessage(chatId, 'Помилка під час відтворення замовлень.');
+            }
+        }
+
+        if (action === 'edit') {
+            const buttons = {
+                reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                        [{ text: 'Нове', callback_data: `status_${orderId}_new` }],
+                        [{ text: 'В обробці', callback_data: `status_${orderId}_processing` }],
+                        [{ text: 'Відхилено', callback_data: `status_${orderId}_rejection` }],
+                        [{ text: 'Відправлено', callback_data: `status_${orderId}_done` }]
+                    ]
+                })
+            };
+            bot.editMessageText('Оберіть новий статус:', {
+                chat_id: query.message.chat.id,
+                message_id: query.message.message_id,
+                reply_markup: buttons.reply_markup
+            });
+        } else {
+            let order = await Shop.findById(orderId);
+            order.position = newStatus;
+            await order.save();
+            if (newStatus === 'done') {
+                bot.sendMessage(query.message.chat.id, 'Введіть ТТН:').then(() => {
+                    bot.once('message', async (message) => {
+                        try {
+                            // Знаходимо замовлення за допомогою методу findOne
+                            let order = await Shop.findById(orderId);
+
+                            // Перевіряємо, чи було успішно знайдено замовлення
+                            if (order) {
+                                // Якщо замовлення знайдено, встановлюємо властивість 'ttn'
+                                order.ttn = message.text;
+                                await order.save();
+                                showAllOrders(query.message.chat.id);
+                            } else {
+                                // Якщо замовлення не знайдено, повідомляємо про помилку
+                                bot.sendMessage(query.message.chat.id, 'Замовлення не знайдено. Помилка при збереженні ТТН.');
+                            }
+                        } catch (error) {
+                            console.error(error);
+                            bot.sendMessage(query.message.chat.id, 'Помилка під час збереження ТТН.');
+                        }
+                    });
+                });
+            } else {
+                showAllOrders(query.message.chat.id);
+            }
+        }
+    } catch (error) {
+        console.error(error);
+        bot.sendMessage(query.message.chat.id, 'Помилка під час зміни статусу замовлення.');
+    }
+});
+
+
+
+
+
 
 
 // Функція для відображення всіх відгуків
