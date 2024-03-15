@@ -790,7 +790,7 @@ function chatAlreadyNotified(chatId) {
 
 
 // Функція для відображення всіх замовлень
-async function showAllOrders(chatId, isAdmin = false) {
+async function showAllOrders(chatId) {
     try {
         const allOrders = await Shop.find();
 
@@ -808,121 +808,83 @@ async function showAllOrders(chatId, isAdmin = false) {
                     Загальна сума: ${order.totalAmount} грн
                 `;
 
-
-                 const buttons = {
-                        reply_markup: JSON.stringify({
-                            inline_keyboard: [
-                                [{ text: 'Редагувати', callback_data: `edit_${order._id}` }]
-                            ]
-                        })
-                    };
+                const buttons = {
+                    reply_markup: JSON.stringify({
+                        inline_keyboard: [
+                            [{ text: 'Редагувати', callback_data: `edit_${order._id}` }]
+                        ]
+                    })
+                };
 
                 bot.sendMessage(chatId, orderInfo, buttons);
             });
         } else {
             bot.sendMessage(chatId, 'Немає доступних замовлень.');
         }
+
+        // Обробник подій в межах функції
+        bot.on('callback_query', async (query) => {
+            const [action, orderId, newStatus] = query.data.split('_');
+            try {
+                if (action === 'edit') {
+                    const buttons = {
+                        reply_markup: JSON.stringify({
+                            inline_keyboard: [
+                                [{ text: 'Нове', callback_data: `status_${orderId}_new` }],
+                                [{ text: 'В обробці', callback_data: `status_${orderId}_processing` }],
+                                [{ text: 'Відхилено', callback_data: `status_${orderId}_rejection` }],
+                                [{ text: 'Відправлено', callback_data: `status_${orderId}_done` }]
+                            ]
+                        })
+                    };
+                    bot.editMessageText('Оберіть новий статус:', {
+                        chat_id: query.message.chat.id,
+                        message_id: query.message.message_id,
+                        reply_markup: buttons.reply_markup
+                    });
+                } else {
+                    let order = await Shop.findById(orderId);
+                    order.position = newStatus;
+                    await order.save();
+                    if (newStatus === 'done') {
+                        bot.sendMessage(query.message.chat.id, 'Введіть ТТН:').then(() => {
+                            bot.once('message', async (message) => {
+                                try {
+                                    // Знаходимо замовлення за допомогою методу findOne
+                                    let order = await Shop.findById(orderId);
+
+                                    // Перевіряємо, чи було успішно знайдено замовлення
+                                    if (order) {
+                                        // Якщо замовлення знайдено, встановлюємо властивість 'ttn'
+                                        order.ttn = message.text;
+                                        await order.save();
+                                        showAllOrders(query.message.chat.id);
+                                    } else {
+                                        // Якщо замовлення не знайдено, повідомляємо про помилку
+                                        bot.sendMessage(query.message.chat.id, 'Замовлення не знайдено. Помилка при збереженні ТТН.');
+                                    }
+                                } catch (error) {
+                                    console.error(error);
+                                    bot.sendMessage(query.message.chat.id, 'Помилка під час збереження ТТН.');
+                                }
+                            });
+                        });
+                    } else {
+                        showAllOrders(query.message.chat.id);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                bot.sendMessage(query.message.chat.id, 'Помилка під час зміни статусу замовлення.');
+            }
+        });
+
     } catch (error) {
         console.error(error);
         bot.sendMessage(chatId, 'Помилка під час відтворення замовлень.');
     }
 }
 
-bot.on('callback_query', async (query) => {
-    const [action, orderId, newStatus] = query.data.split('_');
-    try {
-        async function showAllOrders(chatId) {
-            try {
-                const allOrders = await Shop.find();
-
-                if (allOrders.length > 0) {
-                    allOrders.forEach(order => {
-                        const orderInfo = `
-                            ID: ${order._id}
-                            Клієнт: ${order.firstName} ${order.lastName}
-                            Телефон: ${order.phoneNumber}
-                            Місто: ${order.city}
-                            Відділення: ${order.numberPost}
-                            Товар: ${order.productItems.map(item => `${item.title} (${item.quantity} шт.)`).join(', ')}
-                            Статус: ${order.position}
-                            ТТН: ${order.ttn || 'не вказано'}
-                            Загальна сума: ${order.totalAmount} грн
-                        `;
-
-                        let buttons = null;
-                        if (isAdmin) {
-                            buttons = {
-                                reply_markup: JSON.stringify({
-                                    inline_keyboard: [
-                                        [{ text: 'Редагувати', callback_data: `edit_${order._id}` }]
-                                    ]
-                                })
-                            };
-                        }
-
-                        bot.sendMessage(chatId, orderInfo, buttons);
-                    });
-                } else {
-                    bot.sendMessage(chatId, 'Немає доступних замовлень.');
-                }
-            } catch (error) {
-                console.error(error);
-                bot.sendMessage(chatId, 'Помилка під час відтворення замовлень.');
-            }
-        }
-
-        if (action === 'edit') {
-            const buttons = {
-                reply_markup: JSON.stringify({
-                    inline_keyboard: [
-                        [{ text: 'Нове', callback_data: `status_${orderId}_new` }],
-                        [{ text: 'В обробці', callback_data: `status_${orderId}_processing` }],
-                        [{ text: 'Відхилено', callback_data: `status_${orderId}_rejection` }],
-                        [{ text: 'Відправлено', callback_data: `status_${orderId}_done` }]
-                    ]
-                })
-            };
-            bot.editMessageText('Оберіть новий статус:', {
-                chat_id: query.message.chat.id,
-                message_id: query.message.message_id,
-                reply_markup: buttons.reply_markup
-            });
-        } else {
-            let order = await Shop.findById(orderId);
-            order.position = newStatus;
-            await order.save();
-            if (newStatus === 'done') {
-                bot.sendMessage(query.message.chat.id, 'Введіть ТТН:').then(() => {
-                    bot.once('message', async (message) => {
-                        try {
-                            // Знаходимо замовлення за допомогою методу findOne
-                            let order = await Shop.findById(orderId);
-
-                            // Перевіряємо, чи було успішно знайдено замовлення
-                            if (order) {
-                                // Якщо замовлення знайдено, встановлюємо властивість 'ttn'
-                                order.ttn = message.text;
-                                await order.save();
-                                showAllOrders(query.message.chat.id);
-                            } else {
-                                // Якщо замовлення не знайдено, повідомляємо про помилку
-                                bot.sendMessage(query.message.chat.id, 'Замовлення не знайдено. Помилка при збереженні ТТН.');
-                            }
-                        } catch (error) {
-                            console.error(error);
-                            bot.sendMessage(query.message.chat.id, 'Помилка під час збереження ТТН.');
-                        }
-                    });
-                });
-            } else {
-                showAllOrders(query.message.chat.id);
-            }
-        }
-    } catch (error) {
-        console.error(error);
-        bot.sendMessage(query.message.chat.id, 'Помилка під час зміни статусу замовлення.');
-    }
-});
 
 
 
