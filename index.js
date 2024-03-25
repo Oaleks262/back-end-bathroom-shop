@@ -18,6 +18,9 @@ import FeedbackSchema from "./model/feedback.js";
 import TelegramBot from "node-telegram-bot-api";
 import feedback from "./model/feedback.js";
 import multer from "multer";
+import path from "path";
+import fs from "fs";
+import url from "url";
 
 
 
@@ -166,14 +169,11 @@ app.get('/api/admin/product',authenticateToken, async (req, res) => {
 app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), async (req, res) => {
     try {
       const { titleProduct, aboutProduct, priceProduct, category } = req.body;
-  
-      if (!titleProduct || !aboutProduct || !priceProduct) {
-        return res.status(400).json({ message: "Please provide all required fields." });
-      }
       
-        const serverUrl = "https://bathroom-shop-api.onrender.com";
+        // const serverUrl = "https://bathroom-shop-api.onrender.com";
+        const serverUrl = "http://localhost:222/";
         const fullUrl = req.file ? req.file.path : '';
-        const avatarUrl = `${serverUrl}/${fullUrl}`;
+        const avatarUrl = `${serverUrl}${fullUrl}`;
 
     //   const avatarUrl = req.file ? req.file.path : ''; 
   
@@ -222,25 +222,61 @@ app.put('/api/admin/product/:productId', authenticateToken, async (req, res) => 
         res.status(500).json({ message: "Не вдалося оновити товар" });
     }
 });
-app.delete('/api/admin/product/:productId', authenticateToken, async (req, res) => {
+// app.delete('/api/admin/product/:productId', authenticateToken, async (req, res) => {
+//     try {
+//         const productId = req.params.productId;
+
+//         // Перевірка, чи існує товар з вказаним ID
+//         const existingProduct = await ProductSchema.findById(productId);
+//         if (!existingProduct) {
+//             return res.status(404).json({ message: "Товар не знайдено" });
+//         }
+
+//         // Видалення товару
+//         await ProductSchema.deleteOne({ _id: productId });
+
+//         res.json({ message: "Товар успішно видалено" });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: "Не вдалося видалити товар" });
+//     }
+// });
+
+app.delete('/api/admin/product/:id', authenticateToken, async (req, res) => {
     try {
-        const productId = req.params.productId;
-
-        // Перевірка, чи існує товар з вказаним ID
-        const existingProduct = await ProductSchema.findById(productId);
-        if (!existingProduct) {
-            return res.status(404).json({ message: "Товар не знайдено" });
+      const productId = req.params.id;
+      const product = await ProductSchema.findById(productId);
+  
+      if (!product) {
+        return res.status(404).json({ message: "Товар не знайдено" });
+      }
+  
+      // Отримати ім'я файлу з URL-шляху
+      const parsedUrl = url.parse(product.avatarUrl);
+      const filename = path.basename(parsedUrl.pathname);
+      // Скласти абсолютний шлях до файлу на сервері
+      const uploadsDirectory = path.join('uploads');
+      const filePath = path.join(uploadsDirectory, filename);
+  
+      // Видалити файл
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.error(err);
+          return res.status(500).json({ message: "Помилка при видаленні файлу" });
         }
-
-        // Видалення товару
-        await ProductSchema.deleteOne({ _id: productId });
-
-        res.json({ message: "Товар успішно видалено" });
+        console.log(`Файл ${filename} успішно видалено`);
+      });
+  
+      // Потім можна видалити товар з бази даних
+      await product.deleteOne();
+  
+      res.status(200).json({ message: "Товар успішно видалено" });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Не вдалося видалити товар" });
+      console.error(error);
+      res.status(500).json({ message: "Помилка під час видалення товару" });
     }
 });
+
 app.post('/api/order', async (req, res) => {
     try {
         const { firstName, lastName, phoneNumber, city, postOffice, numberPost, productItems } = req.body;
