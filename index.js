@@ -170,7 +170,7 @@ app.post('/api/admin/product', authenticateToken, upload.single('avatarUrl'), as
     try {
       const { titleProduct, aboutProduct, priceProduct, category } = req.body;
       
-        const serverUrl = "https://bathroom-shop-api.onrender.com";
+        const serverUrl = "https://bathroom-shop-api.onrender.com/";
         // const serverUrl = "http://localhost:222/";
         const fullUrl = req.file ? req.file.path : '';
         const avatarUrl = `${serverUrl}${fullUrl}`;
